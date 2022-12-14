@@ -1,0 +1,30 @@
+# .gitignore file
+Makefile
+.git
+
+# MPLAB X IDE (Netbeans) specific
+build/
+debug/
+dist/
+disassembly/
+.generated_files/
+nbproject/
+
+# Object files
+*.o
+*.ko
+*.obj
+*.elf
+*.lst
+*.cod
+
+# Executables
+*.exe
+
+
+# KDE specific
+.directory
+
+# Misc
+.svn
+*.bak
