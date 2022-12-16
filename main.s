@@ -26,9 +26,6 @@ CONFIG  CP = OFF              ; Flash Program Memory Code Protection bit (Code p
 
 ; Used Registers
 	
-REG00A	equ	00Ah
-REG00B	equ	00Bh
-REG01F	equ	01Fh
 REG020	equ	020h
 REG021	equ	021h
 REG022	equ	022h
@@ -61,8 +58,8 @@ REG070	equ	070h
 REG071	equ	071h
 REG072	equ	072h
 REG073	equ	073h
-REG074	equ	074h
-REG075	equ	075h
+TMP_STATUS	equ	074h
+TMP_PCLATH	equ	075h
 REG076	equ	076h
 REG077	equ	077h
 REG078	equ	078h
@@ -71,16 +68,8 @@ REG07A	equ	07Ah
 REG07B	equ	07Bh
 REG07C	equ	07Ch
 REG07D	equ	07Dh
-REG07E	equ	07Eh
-REG081	equ	081h
-REG083	equ	083h
-REG085	equ	085h
-REG086	equ	086h
-REG08B	equ	08Bh
-REG09A	equ	09Ah
-REG09B	equ	09Bh
-REG09C	equ	09Ch
-REG09D	equ	09Dh
+TMP_W	equ	07Eh
+
 
 
 
@@ -90,17 +79,17 @@ ResetVector:
 	goto		start
 	org	0x0004
 HighInterruptVector:
-	movwf		REG07E
+	movwf		TMP_W
 	movf		STATUS,W
-	movwf		REG074
-	movf		REG00A,W
-	movwf		REG075
+	movwf		TMP_STATUS
+	movf		PCLATH,W
+	movwf		TMP_PCLATH
 	goto		intrpt
 start:
 	goto		start1
 L_000B:
 	movlw		0x00		;b'0000 0000',' ',.00
-	movwf		REG00A
+	movwf		PCLATH
 	movf		FSR,W
 	incf		FSR,F
 	addwf		PCL,F
@@ -142,45 +131,45 @@ pause1:
 	call		L_03B3
 	movlw		0x78		;b'0111 1000','x',.120
 	bsf		RP0
-	movwf		REG09B
-	bsf		REG09C,0
-	movf		REG09A,W
-	bcf		REG083,5
+	movwf		EEADR
+	bsf		EECON1,0
+	movf		EEDATA,W
+	bcf		RP0
 	movwf		REG02F
 	movlw		0x79		;b'0111 1001','y',.121
 	bsf		RP0
-	movwf		REG09B
-	bsf		REG09C,0
-	movf		REG09A,W
-	bcf		REG083,5
+	movwf		EEADR
+	bsf		EECON1,0
+	movf		EEDATA,W
+	bcf		RP0
 	movwf		REG02E
 	movlw		0x7A		;b'0111 1010','z',.122
 	bsf		RP0
-	movwf		REG09B
-	bsf		REG09C,0
-	movf		REG09A,W
-	bcf		REG083,5
+	movwf		EEADR
+	bsf		EECON1,0
+	movf		EEDATA,W
+	bcf		RP0
 	movwf		REG026
 	movlw		0x7B		;b'0111 1011','{',.123
 	bsf		RP0
-	movwf		REG09B
-	bsf		REG09C,0
-	movf		REG09A,W
-	bcf		REG083,5
+	movwf		EEADR
+	bsf		EECON1,0
+	movf		EEDATA,W
+	bcf		RP0
 	movwf		REG025
 	movlw		0x7C		;b'0111 1100','|',.124
 	bsf		RP0
-	movwf		REG09B
-	bsf		REG09C,0
-	movf		REG09A,W
-	bcf		REG083,5
+	movwf		EEADR
+	bsf		EECON1,0
+	movf		EEDATA,W
+	bcf		RP0
 	movwf		REG02B
 	movlw		0x7D		;b'0111 1101','}',.125
 	bsf		RP0
-	movwf		REG09B
-	bsf		REG09C,0
-	movf		REG09A,W
-	bcf		REG083,5
+	movwf		EEADR
+	bsf		EECON1,0
+	movf		EEDATA,W
+	bcf		RP0
 	movwf		REG027
 	call		L_028F
 	call		L_056E
@@ -426,168 +415,168 @@ L_0124:
 	call		L_056E
 L_012B:
 	bsf		RP0
-	btfsc		REG09C,1
+	btfsc		EECON1,1
 	goto		L_012B
 	movlw		0x78		;b'0111 1000','x',.120
-	movwf		REG09B
-	bcf		REG083,5
+	movwf		EEADR
+	bcf		RP0
 	movf		REG02F,W
 	bsf		RP0
-	movwf		REG09A
-	bcf		REG083,0
-	btfsc		REG08B,7
-	bsf		REG083,0
-	bcf		REG08B,7
-	bsf		REG09C,2
+	movwf		EEDATA
+	bcf		CARRY
+	btfsc		GIE
+	bsf		CARRY
+	bcf		GIE
+	bsf		EECON1,2
 	movlw		0x55		;b'0101 0101','U',.85
-	movwf		REG09D
+	movwf		EECON2
 	movlw		0xAA		;b'1010 1010','Є',.170
-	movwf		REG09D
-	bsf		REG09C,1
-	bcf		REG09C,2
-	btfsc		REG083,0
-	bsf		REG08B,7
+	movwf		EECON2
+	bsf		EECON1,1
+	bcf		EECON1,2
+	btfsc		CARRY
+	bsf		GIE
 L_0141:
-	btfsc		REG09C,1
+	btfsc		EECON1,1
 	goto		L_0141
 	movlw		0x79		;b'0111 1001','y',.121
-	movwf		REG09B
-	bcf		REG083,5
+	movwf		EEADR
+	bcf		RP0
 	movf		REG02E,W
 	bsf		RP0
-	movwf		REG09A
-	bcf		REG083,0
-	btfsc		REG08B,7
-	bsf		REG083,0
-	bcf		REG08B,7
-	bsf		REG09C,2
+	movwf		EEDATA
+	bcf		CARRY
+	btfsc		GIE
+	bsf		CARRY
+	bcf		GIE
+	bsf		EECON1,2
 	movlw		0x55		;b'0101 0101','U',.85
-	movwf		REG09D
+	movwf		EECON2
 	movlw		0xAA		;b'1010 1010','Є',.170
-	movwf		REG09D
-	bsf		REG09C,1
-	bcf		REG09C,2
-	btfsc		REG083,0
-	bsf		REG08B,7
+	movwf		EECON2
+	bsf		EECON1,1
+	bcf		EECON1,2
+	btfsc		CARRY
+	bsf		GIE
 L_0156:
-	btfsc		REG09C,1
+	btfsc		EECON1,1
 	goto		L_0156
 	movlw		0x7A		;b'0111 1010','z',.122
-	movwf		REG09B
-	bcf		REG083,5
+	movwf		EEADR
+	bcf		RP0
 	movf		REG026,W
 	bsf		RP0
-	movwf		REG09A
-	bcf		REG083,0
-	btfsc		REG08B,7
-	bsf		REG083,0
-	bcf		REG08B,7
-	bsf		REG09C,2
+	movwf		EEDATA
+	bcf		CARRY
+	btfsc		GIE
+	bsf		CARRY
+	bcf		GIE
+	bsf		EECON1,2
 	movlw		0x55		;b'0101 0101','U',.85
-	movwf		REG09D
+	movwf		EECON2
 	movlw		0xAA		;b'1010 1010','Є',.170
-	movwf		REG09D
-	bsf		REG09C,1
-	bcf		REG09C,2
-	btfsc		REG083,0
-	bsf		REG08B,7
+	movwf		EECON2
+	bsf		EECON1,1
+	bcf		EECON1,2
+	btfsc		CARRY
+	bsf		GIE
 L_016B:
-	btfsc		REG09C,1
+	btfsc		EECON1,1
 	goto		L_016B
 	movlw		0x7B		;b'0111 1011','{',.123
-	movwf		REG09B
-	bcf		REG083,5
+	movwf		EEADR
+	bcf		RP0
 	movf		REG025,W
 	bsf		RP0
-	movwf		REG09A
-	bcf		REG083,0
-	btfsc		REG08B,7
-	bsf		REG083,0
-	bcf		REG08B,7
-	bsf		REG09C,2
+	movwf		EEDATA
+	bcf		CARRY
+	btfsc		GIE
+	bsf		CARRY
+	bcf		GIE
+	bsf		EECON1,2
 	movlw		0x55		;b'0101 0101','U',.85
-	movwf		REG09D
+	movwf		EECON2
 	movlw		0xAA		;b'1010 1010','Є',.170
-	movwf		REG09D
-	bsf		REG09C,1
-	bcf		REG09C,2
-	btfsc		REG083,0
-	bsf		REG08B,7
+	movwf		EECON2
+	bsf		EECON1,1
+	bcf		EECON1,2
+	btfsc		CARRY
+	bsf		GIE
 L_0180:
-	btfsc		REG09C,1
+	btfsc		EECON1,1
 	goto		L_0180
 	movlw		0x7C		;b'0111 1100','|',.124
-	movwf		REG09B
-	bcf		REG083,5
+	movwf		EEADR
+	bcf		RP0
 	movf		REG02B,W
 	bsf		RP0
-	movwf		REG09A
-	bcf		REG083,0
-	btfsc		REG08B,7
-	bsf		REG083,0
-	bcf		REG08B,7
-	bsf		REG09C,2
+	movwf		EEDATA
+	bcf		CARRY
+	btfsc		GIE
+	bsf		CARRY
+	bcf		GIE
+	bsf		EECON1,2
 	movlw		0x55		;b'0101 0101','U',.85
-	movwf		REG09D
+	movwf		EECON2
 	movlw		0xAA		;b'1010 1010','Є',.170
-	movwf		REG09D
-	bsf		REG09C,1
-	bcf		REG09C,2
-	btfsc		REG083,0
-	bsf		REG08B,7
+	movwf		EECON2
+	bsf		EECON1,1
+	bcf		EECON1,2
+	btfsc		CARRY
+	bsf		GIE
 L_0195:
-	btfsc		REG09C,1
+	btfsc		EECON1,1
 	goto		L_0195
 	movlw		0x7D		;b'0111 1101','}',.125
-	movwf		REG09B
-	bcf		REG083,5
+	movwf		EEADR
+	bcf		RP0
 	movf		REG027,W
 	bsf		RP0
-	movwf		REG09A
-	bcf		REG083,0
-	btfsc		REG08B,7
-	bsf		REG083,0
-	bcf		REG08B,7
-	bsf		REG09C,2
+	movwf		EEDATA
+	bcf		CARRY
+	btfsc		GIE
+	bsf		CARRY
+	bcf		GIE
+	bsf		EECON1,2
 	movlw		0x55		;b'0101 0101','U',.85
-	movwf		REG09D
+	movwf		EECON2
 	movlw		0xAA		;b'1010 1010','Є',.170
-	movwf		REG09D
-	bsf		REG09C,1
-	bcf		REG09C,2
-	btfss		REG083,0
+	movwf		EECON2
+	bsf		EECON1,1
+	bcf		EECON1,2
+	btfss		CARRY
 	goto		L_005E
-	bsf		REG08B,7
+	bsf		GIE
 	goto		L_005E
 intrpt:
 	movlw		0x01		;b'0000 0001',' ',.01
-	btfss		REG00B,0
-	andlw		0x00		;b'0000 0000',' ',.00
-	btfss		REG00B,3
-	andlw		0x00		;b'0000 0000',' ',.00
+	btfss		RBIF
+	    andlw	0x00		;b'0000 0000',' ',.00
+	btfss		RBIE
+	    andlw	0x00		;b'0000 0000',' ',.00
 	iorlw		0x00		;b'0000 0000',' ',.00
 	btfsc		ZERO
-	goto		L_01D0
-	bcf		REG00B,0
+	    goto	L_01D0
+	bcf		RBIF
 	movlw		0x00		;b'0000 0000',' ',.00
 	bcf		RP0
 	bcf		RP1
 	btfsc		RB7
-	movlw		0x01		;b'0000 0001',' ',.01
+	    movlw	0x01		;b'0000 0001',' ',.01
 	movwf		REG077
 	movlw		0x00		;b'0000 0000',' ',.00
 	btfsc		RB6
-	movlw		0x01		;b'0000 0001',' ',.01
+	    movlw	0x01		;b'0000 0001',' ',.01
 	movwf		REG07D
 	xorwf		REG029,W
 	btfsc		ZERO
-	goto		L_01CE
+	    goto	L_01CE
 	decf		REG07D,W
 	btfsc		ZERO
-	goto		L_01CE
+	    goto	L_01CE
 	decf		REG077,W
 	btfsc		ZERO
-	goto		L_01CB
+	    goto	L_01CB
 	clrf		REG02A
 	incf		REG02A,F
 	goto		L_01CC
@@ -601,14 +590,14 @@ L_01CE:
 	movwf		REG029
 L_01D0:
 	movlw		0x01		;b'0000 0001',' ',.01
-	btfss		REG00B,2
+	btfss		TMR0IF
 	andlw		0x00		;b'0000 0000',' ',.00
-	btfss		REG00B,5
+	btfss		T0IE
 	andlw		0x00		;b'0000 0000',' ',.00
 	iorlw		0x00		;b'0000 0000',' ',.00
 	btfsc		ZERO
 	goto		L_0224
-	bcf		REG00B,2
+	bcf		TMR0IF
 	clrf		REG078
 	incf		REG078,F
 	clrf		REG079
@@ -690,12 +679,12 @@ L_0219:
 	movlw		0xFF		;b'1111 1111','я',.255
 	movwf		TMR0
 L_0224:
-	movf		REG075,W
-	movwf		REG00A
-	movf		REG074,W
+	movf		TMP_PCLATH,W
+	movwf		PCLATH
+	movf		TMP_STATUS,W
 	movwf		STATUS
-	swapf		REG07E,F
-	swapf		REG07E,W
+	swapf		TMP_W,F
+	swapf		TMP_W,W
 	retfie	
 L_022B:
 	bcf		RA2
@@ -806,11 +795,11 @@ L_028F:
 	call		L_0593
 	movlw		0x88		;b'1000 1000','€',.136
 	call		L_0480
-	bcf		REG083,5
+	bcf		RP0
 	movf		REG02F,W
 	sublw		0x40		;b'0100 0000','@',.64
 	call		L_0480
-	bcf		REG083,5
+	bcf		RP0
 	decfsz	REG03A,W
 	goto		L_029B
 	movlw		0x43		;b'0100 0011','C',.67
@@ -837,19 +826,19 @@ L_02AB:
 	movf		REG035,W
 	addlw		0x80		;b'1000 0000','Ђ',.128
 	call		L_0480
-	bcf		REG083,5
+	bcf		RP0
 	movf		REG034,W
 	addlw		0xA0		;b'1010 0000',' ',.160
 	call		L_0480
-	bcf		REG083,5
+	bcf		RP0
 	movf		REG035,W
 	addlw		0xC0		;b'1100 0000','А',.192
 	call		L_0480
-	bcf		REG083,5
+	bcf		RP0
 	movf		REG034,W
 	addlw		0xE0		;b'1110 0000','а',.224
 	call		L_0480
-	bcf		REG083,5
+	bcf		RP0
 	movf		REG027,W
 	addlw		0x3F		;b'0011 1111','?',.63
 	movwf		REG033
@@ -861,14 +850,14 @@ L_02AB:
 L_02C3:
 	movf		REG033,W
 	call		L_0480
-	bcf		REG083,5
+	bcf		RP0
 	movf		REG026,W
 	addlw		0x01		;b'0000 0001',' ',.01
 	movwf		FSR
 	call		L_000B
 	addlw		0x60		;b'0110 0000','`',.96
 	call		L_0480
-	bcf		REG083,5
+	bcf		RP0
 	movf		REG02E,W
 	addlw		0x01		;b'0000 0001',' ',.01
 	movwf		FSR
@@ -1028,7 +1017,7 @@ L_0353:
 	incf		REG03A,F
 	clrf		REG02D
 L_0358:
-	bcf		REG00B,7
+	bcf		GIE
 	movlw		0xFF		;b'1111 1111','я',.255
 	movwf		REG031
 L_035B:
@@ -1072,7 +1061,7 @@ L_037B:
 	goto		L_037B
 	goto		L_035B
 L_037E:
-	bsf		REG00B,7
+	bsf		GIE
 	return	
 L_0380:
 	movlw		0x02		;b'0000 0010',' ',.02
@@ -1193,10 +1182,10 @@ L_03E3:
 	goto		L_03F2
 	movf		REG033,W
 	bsf		RP0
-	movwf		REG09B
-	bsf		REG09C,0
-	movf		REG09A,F
-	bcf		REG083,5
+	movwf		EEADR
+	bsf		EECON1,0
+	movf		EEDATA,F
+	bcf		RP0
 	btfsc		ZERO
 	incf		REG034,F
 	bcf		RP0
@@ -1207,20 +1196,20 @@ L_03F2:
 L_03F3:
 	movf		REG033,W
 	bsf		RP0
-	movwf		REG09B
-	bsf		REG09C,0
-	movf		REG09A,W
+	movwf		EEADR
+	bsf		EECON1,0
+	movf		EEDATA,W
 	call		L_0516
 	incf		REG033,F
 	movf		REG033,W
 	bsf		RP0
-	movwf		REG09B
-	bsf		REG09C,0
-	movf		REG09A,F
-	btfss		REG083,2
+	movwf		EEADR
+	bsf		EECON1,0
+	movf		EEDATA,F
+	btfss		ZERO
 	goto		L_0404
 	movlw		0x10		;b'0001 0000',' ',.16
-	bcf		REG083,5
+	bcf		RP0
 	movwf		REG034
 L_0404:
 	bcf		RP0
@@ -1396,44 +1385,44 @@ L_0499:
 	goto		L_0483
 L_049B:
 	bsf		RP0
-	bsf		REG085,6
+	bsf		TRISA,6
 	call		L_05B1
 	call		L_05A1
 	bsf		RP0
-	bcf		REG085,6
+	bcf		TRISA,6
 	return	
 L_04A2:
 	bcf		RP0
 	clrf		REG02C
 	bsf		RP0
-	bsf		REG086,0
-	bcf		REG083,5
+	bsf		TRISB,0
+	bcf		RP0
 	btfsc		RB0
 	goto		L_04AB
 	clrf		REG02C
 	incf		REG02C,F
 L_04AB:
 	bsf		RP0
-	bcf		REG086,0
-	bsf		REG086,1
-	bcf		REG083,5
+	bcf		TRISB,0
+	bsf		TRISB,1
+	bcf		RP0
 	btfsc		RB1
 	goto		L_04B3
 	movlw		0x02		;b'0000 0010',' ',.02
 	movwf		REG02C
 L_04B3:
 	bsf		RP0
-	bcf		REG086,1
-	bsf		REG086,2
-	bcf		REG083,5
+	bcf		TRISB,1
+	bsf		TRISB,2
+	bcf		RP0
 	btfsc		RB2
 	goto		L_04BB
 	movlw		0x03		;b'0000 0011',' ',.03
 	movwf		REG02C
 L_04BB:
 	bsf		RP0
-	bcf		REG086,2
-	bcf		REG083,5
+	bcf		TRISB,2
+	bcf		RP0
 	btfsc		RB5
 	return	
 	movlw		0x04		;b'0000 0100',' ',.04
@@ -1506,31 +1495,31 @@ L_04FA:
 	movf		REG033,W
 	return	
 L_04FC:
-	clrf		REG00B
+	clrf		INTCON
 	movlw		0x10		;b'0001 0000',' ',.16
 	bsf		RP0
-	movwf		REG085
+	movwf		TRISA
 	movlw		0xE0		;b'1110 0000','а',.224
-	movwf		REG086
+	movwf		TRISB
 	movlw		0x07		;b'0000 0111',' ',.07
-	bcf		REG083,5
-	movwf		REG01F
+	bcf		RP0
+	movwf		CMCON
 	clrf		PORTA
 	clrf		PORTB
 	bsf		RP0
-	bcf		REG081,7
-	bsf		REG08B,6
-	bsf		REG081,5
-	bsf		REG081,4
-	bsf		REG081,3
+	bcf		nRBPU
+	bsf		PEIE
+	bsf		T0CS
+	bsf		T0SE
+	bsf		PSA
 	movlw		0xFF		;b'1111 1111','я',.255
-	bcf		REG083,5
+	bcf		RP0
 	movwf		TMR0
-	bsf		REG00B,5
-	bcf		REG00B,2
-	bsf		REG00B,3
-	bcf		REG00B,0
-	bsf		REG00B,7
+	bsf		T0IE
+	bcf		TMR0IF
+	bsf		RBIE
+	bcf		RBIF
+	bsf		GIE
 	return	
 L_0516:
 	bcf		RP0
