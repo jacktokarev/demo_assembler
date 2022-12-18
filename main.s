@@ -1,15 +1,3 @@
-;***********************************
-; disassembled by HellFire v4.00.0 b00
-;       13 Dec 22 11:02:21
-;***********************************
-; Input file HEX_7313.hex
-; Processor pic16xxxx
-
-;==========================================================================
-;
-;       Register Definitions
-;
-;==========================================================================
 #include "main.inc"
 	
 ; CONFIG
@@ -23,7 +11,11 @@ CONFIG  CPD = OFF             ; Data EE Memory Code Protection bit (Data memory 
 CONFIG  CP = OFF              ; Flash Program Memory Code Protection bit (Code protection off)
 
 
-
+;==========================================================================
+;
+;       Register Definitions
+;
+;==========================================================================
 ; Used Registers
 	
 REG020	equ	020h
@@ -46,8 +38,8 @@ REG030	equ	030h
 REG031	equ	031h
 REG032	equ	032h
 REG033	equ	033h
-REG034	equ	034h
-REG035	equ	035h
+COUNT3	equ	034h
+COUNT4	equ	035h
 REG036	equ	036h
 REG037	equ	037h
 COUNT1	equ	038h
@@ -127,8 +119,8 @@ pause1:
 	    incf	COUNT2,W
 	btfss		ZERO
 	    goto	pause1
-	call		L_04FC
-	call		L_03B3
+	call		start3
+	call		start4
 	movlw		0x78		;b'0111 1000','x',.120
 	bsf		RP0
 	movwf		EEADR
@@ -805,37 +797,37 @@ L_028F:
 	movlw		0x43		;b'0100 0011','C',.67
 	goto		L_02D2
 L_029B:
-	clrf		REG034
+	clrf		COUNT3
 	movlw		0x21		;b'0010 0001','!',.33
 	subwf		REG025,W
 	btfsc		CARRY
 	goto		L_02A3
 	movf		REG025,W
 	sublw		0x20		;b'0010 0000',' ',.32
-	movwf		REG034
+	movwf		COUNT3
 L_02A3:
-	clrf		REG035
+	clrf		COUNT4
 	movlw		0x21		;b'0010 0001','!',.33
 	subwf		REG025,W
 	btfss		CARRY
 	goto		L_02AB
 	movf		REG025,W
 	addlw		0xDF		;b'1101 1111','Я',.223
-	movwf		REG035
+	movwf		COUNT4
 L_02AB:
-	movf		REG035,W
+	movf		COUNT4,W
 	addlw		0x80		;b'1000 0000','Ђ',.128
 	call		L_0480
 	bcf		RP0
-	movf		REG034,W
+	movf		COUNT3,W
 	addlw		0xA0		;b'1010 0000',' ',.160
 	call		L_0480
 	bcf		RP0
-	movf		REG035,W
+	movf		COUNT4,W
 	addlw		0xC0		;b'1100 0000','А',.192
 	call		L_0480
 	bcf		RP0
-	movf		REG034,W
+	movf		COUNT3,W
 	addlw		0xE0		;b'1110 0000','а',.224
 	call		L_0480
 	bcf		RP0
@@ -1123,21 +1115,21 @@ L_039F:
 	goto		L_0397
 L_03B2:
 	goto		L_028F
-L_03B3:
+start4:
 	movlw		0x53		;b'0101 0011','S',.83
-	movwf		REG034
+	movwf		COUNT3
 	movlw		0x05		;b'0000 0101',' ',.05
-	movwf		REG035
-L_03B7:
+	movwf		COUNT4
+pause2:
 	movlw		0x01		;b'0000 0001',' ',.01
-	subwf		REG034,F
+	subwf		COUNT3,F
 	btfss		CARRY
-	decf		REG035,F
-	incf		REG034,W
+	    decf	COUNT4,F
+	incf		COUNT3,W
 	btfsc		ZERO
-	incf		REG035,W
+	    incf	COUNT4,W
 	btfss		ZERO
-	goto		L_03B7
+	    goto	pause2
 	bcf		RA2
 	bcf		RB3
 	bcf		RB2
@@ -1146,21 +1138,21 @@ L_03B7:
 	bsf		RA3
 	bcf		RA3
 	movlw		0x74		;b'0111 0100','t',.116
-	movwf		REG034
+	movwf		COUNT3
 	movlw		0x01		;b'0000 0001',' ',.01
-	movwf		REG035
-L_03CB:
+	movwf		COUNT4
+pause3:
 	movlw		0x01		;b'0000 0001',' ',.01
-	subwf		REG034,F
+	subwf		COUNT3,F
 	movlw		0x00		;b'0000 0000',' ',.00
 	btfss		CARRY
-	decf		REG035,F
-	subwf		REG035,F
-	incf		REG034,W
+	    decf	COUNT4,F
+	subwf		COUNT4,F
+	incf		COUNT3,W
 	btfsc		ZERO
-	incf		REG035,W
+	    incf	COUNT4,W
 	btfss		ZERO
-	goto		L_03CB
+	    goto	pause3
 	movlw		0x2B		;b'0010 1011','+',.43
 	call		L_0516
 	movlw		0x13		;b'0001 0011','',.19
@@ -1173,13 +1165,13 @@ L_03CB:
 	goto		L_052E
 L_03E0:
 	movwf		REG032
-	clrf		REG034
+	clrf		COUNT3
 	clrf		REG033
 L_03E3:
 	movf		REG032,W
-	xorwf		REG034,W
+	xorwf		COUNT3,W
 	btfsc		ZERO
-	goto		L_03F2
+	    goto	L_03F2
 	movf		REG033,W
 	bsf		RP0
 	movwf		EEADR
@@ -1187,12 +1179,12 @@ L_03E3:
 	movf		EEDATA,F
 	bcf		RP0
 	btfsc		ZERO
-	incf		REG034,F
+	    incf	COUNT3,F
 	bcf		RP0
 	incf		REG033,F
 	goto		L_03E3
 L_03F2:
-	clrf		REG034
+	clrf		COUNT3
 L_03F3:
 	movf		REG033,W
 	bsf		RP0
@@ -1207,22 +1199,22 @@ L_03F3:
 	bsf		EECON1,0
 	movf		EEDATA,F
 	btfss		ZERO
-	goto		L_0404
+	    goto	L_0404
 	movlw		0x10		;b'0001 0000',' ',.16
 	bcf		RP0
-	movwf		REG034
+	movwf		COUNT3
 L_0404:
 	bcf		RP0
-	incf		REG034,F
+	incf		COUNT3,F
 	movlw		0x10		;b'0001 0000',' ',.16
-	subwf		REG034,W
+	subwf		COUNT3,W
 	btfsc		CARRY
-	return	
+	    return	
 	goto		L_03F3
 L_040B:
 	movwf		REG032
-	decfsz	REG032,W
-	goto		L_041E
+	decfsz		REG032,W
+	    goto	L_041E
 	bcf		RA2
 	movlw		0x80		;b'1000 0000','Ђ',.128
 	call		L_0516
@@ -1266,14 +1258,14 @@ L_0427:
 L_0433:
 	movwf		REG033
 	movlw		0x30		;b'0011 0000','0',.48
-	movwf		REG034
+	movwf		COUNT3
 	movwf		REG032
 L_0437:
 	movlw		0x0A		;b'0000 1010',' ',.10
 	subwf		REG033,W
 	btfss		CARRY
 	goto		L_043F
-	incf		REG034,F
+	incf		COUNT3,F
 	movlw		0xF6		;b'1111 0110','ц',.246
 	addwf		REG033,F
 	goto		L_0437
@@ -1284,14 +1276,14 @@ L_043F:
 	movlw		0x8B		;b'1000 1011','‹',.139
 	call		L_0516
 	bsf		RA2
-	movf		REG034,W
+	movf		COUNT3,W
 	xorlw		0x30		;b'0011 0000','0',.48
 	btfss		ZERO
 	goto		L_044B
 	movlw		0x20		;b'0010 0000',' ',.32
-	movwf		REG034
+	movwf		COUNT3
 L_044B:
-	movf		REG034,W
+	movf		COUNT3,W
 	call		L_0516
 	movf		REG032,W
 	call		L_0516
@@ -1313,12 +1305,12 @@ L_045A:
 L_045C:
 	incf		REG037,F
 	movf		REG036,W
-	movwf		REG035
+	movwf		COUNT4
 	bcf		CARRY
-	rrf		REG035,F
+	rrf		COUNT4,F
 	bcf		CARRY
-	rrf		REG035,F
-	movf		REG035,W
+	rrf		COUNT4,F
+	movf		COUNT4,W
 	subwf		REG037,W
 	btfsc		CARRY
 	goto		L_046A
@@ -1331,12 +1323,12 @@ L_046A:
 	movlw		0x3C		;b'0011 1100','<',.60
 	call		L_0516
 	movf		REG036,W
-	movwf		REG035
+	movwf		COUNT4
 	bcf		CARRY
-	rrf		REG035,F
+	rrf		COUNT4,F
 	bcf		CARRY
-	rrf		REG035,F
-	movf		REG035,W
+	rrf		COUNT4,F
+	movf		COUNT4,W
 	movwf		REG037
 L_0476:
 	movlw		0x10		;b'0001 0000',' ',.16
@@ -1448,9 +1440,9 @@ L_04D0:
 	movwf		REG030
 	movf		REG037,W
 	call		L_0554
-	movwf		REG035
+	movwf		COUNT4
 	movf		REG036,W
-	addwf		REG035,W
+	addwf		COUNT4,W
 	movwf		REG037
 	movf		REG037,F
 	btfss		ZERO
@@ -1494,7 +1486,7 @@ L_04F7:
 L_04FA:
 	movf		REG033,W
 	return	
-L_04FC:
+start3:
 	clrf		INTCON
 	movlw		0x10		;b'0001 0000',' ',.16
 	bsf		RP0
@@ -1607,10 +1599,10 @@ L_0556:
 	movf		REG031,W
 	return	
 L_0562:
-	movwf		REG035
+	movwf		COUNT4
 	clrf		REG036
 L_0564:
-	movf		REG035,W
+	movf		COUNT4,W
 	subwf		REG036,W
 	btfsc		CARRY
 	goto		L_056C
@@ -1635,7 +1627,7 @@ L_0576:
 	call		L_03E0
 	goto		L_0380
 start1:
-	bcf		STATUS,7
+	bcf		STATUS,7	;банки 0, 1 при косвенной адресации 
 	movlw		0x20		;адрес первого регистра диапозона
 	movwf		FSR
 	movlw		0x30		;адрес последнего регистра диапозона
