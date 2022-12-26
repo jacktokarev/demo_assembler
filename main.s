@@ -70,13 +70,15 @@ psect ResVect,class=CODE,abs,delta=2
 ResetVector:
 	goto		start
 	org	0x0004
+;*******************************************************************************
 HighInterruptVector:
-	movwf		TMP_W
-	movf		STATUS,W
-	movwf		TMP_STATUS
-	movf		PCLATH,W
-	movwf		TMP_PCLATH
-	goto		intrpt
+	movwf		TMP_W		; сохранить значение аккумулятора
+	movf		STATUS,W	; сохранить
+	movwf		TMP_STATUS	; состояние регистра STATUS
+	movf		PCLATH,W	; сохранить
+	movwf		TMP_PCLATH	; значение PCLATH
+	goto		intrpt		; переход на обработку прерывания
+;*******************************************************************************
 start:
 	goto		start1
 L_000B:
@@ -540,21 +542,25 @@ L_0195:
 	goto		L_005E
 	bsf		GIE
 	goto		L_005E
+;*******************************************************************************
+; обработчик прерываний
 intrpt:
-	movlw		0x01		;b'0000 0001',' ',.01
-	btfss		RBIF
-	    andlw	0x00		;b'0000 0000',' ',.00
-	btfss		RBIE
-	    andlw	0x00		;b'0000 0000',' ',.00
-	iorlw		0x00		;b'0000 0000',' ',.00
-	btfsc		ZERO
-	    goto	L_01D0
-	bcf		RBIF
-	movlw		0x00		;b'0000 0000',' ',.00
-	bcf		RP0
-	bcf		RP1
-	btfsc		RB7
-	    movlw	0x01		;b'0000 0001',' ',.01
+	movlw		0x01		; 1 в аккумулятор
+	btfss		RBIF		; измеения энкодера
+	    andlw	0x00		;   нет
+	btfss		RBIE		; прерывания по энкодеру
+	    andlw	0x00		;   запрещены
+	iorlw		0x00		;
+	btfsc		ZERO		; работа энкодера
+	    goto	int_next1	;   не обнаружена
+; обнаружено прерывание по энкодеру
+	bcf		RBIF		; сброс флага прерывания по энкодеру
+	movlw		0x00		; 0 в аккумулятор
+;	bcf		RP0
+;	bcf		RP1
+	BANKSEL		PORTB
+	btfsc		RB7		; энкодер влево?
+		movlw	0x01		;   нет, вправо
 	movwf		REG077
 	movlw		0x00		;b'0000 0000',' ',.00
 	btfsc		RB6
@@ -580,15 +586,15 @@ L_01CC:
 L_01CE:
 	movf		REG07D,W
 	movwf		REG029
-L_01D0:
+int_next1:
 	movlw		0x01		;b'0000 0001',' ',.01
 	btfss		TMR0IF
-	andlw		0x00		;b'0000 0000',' ',.00
+	    andlw	0x00		;b'0000 0000',' ',.00
 	btfss		T0IE
-	andlw		0x00		;b'0000 0000',' ',.00
+	    andlw	0x00		;b'0000 0000',' ',.00
 	iorlw		0x00		;b'0000 0000',' ',.00
 	btfsc		ZERO
-	goto		L_0224
+	    goto	L_0224
 	bcf		TMR0IF
 	clrf		REG078
 	incf		REG078,F
@@ -602,20 +608,20 @@ L_01E0:
 	movlw		0x01		;b'0000 0001',' ',.01
 	subwf		REG07B,F
 	btfss		CARRY
-	decf		REG07C,F
+	    decf	REG07C,F
 	incf		REG07B,W
 	btfsc		ZERO
-	incf		REG07C,W
+	    incf	REG07C,W
 	btfss		ZERO
-	goto		L_01E0
+	    goto	L_01E0
 	bcf		CARRY
 	bcf		RP0
 	bcf		RP1
 	btfsc		RA4
-	bsf		CARRY
+	    bsf		CARRY
 	movlw		0x00		;b'0000 0000',' ',.00
 	btfsc		CARRY
-	movlw		0x01		;b'0000 0001',' ',.01
+	    movlw	0x01		;b'0000 0001',' ',.01
 	movwf		REG070
 	clrf		REG071
 	movf		REG079,W
@@ -630,12 +636,12 @@ L_01E0:
 	movwf		REG078
 	movf		REG071,W
 	btfsc		CARRY
-	incf		REG071,W
+	    incf	REG071,W
 	addwf		REG073,W
 	movwf		REG079
 	movlw		0x00		;b'0000 0000',' ',.00
 	btfsc		RA4
-	movlw		0x01		;b'0000 0001',' ',.01
+	    movlw	0x01		;b'0000 0001',' ',.01
 	movwf		REG076
 	movlw		0x32		;b'0011 0010','2',.50
 	movwf		REG07B
@@ -645,17 +651,17 @@ L_0209:
 	movf		REG07C,W
 	iorwf		REG07B,W
 	btfsc		ZERO
-	goto		L_0219
+	    goto	L_0219
 	movlw		0x01		;b'0000 0001',' ',.01
 	subwf		REG07B,F
 	movlw		0x00		;b'0000 0000',' ',.00
 	btfss		CARRY
-	decf		REG07C,F
+	    decf	REG07C,F
 	btfsc		RA4
-	movlw		0x01		;b'0000 0001',' ',.01
+	    movlw	0x01		;b'0000 0001',' ',.01
 	xorwf		REG076,W
 	btfsc		ZERO
-	goto		L_0209
+	    goto	L_0209
 	clrf		REG07B
 	goto		L_0208
 L_0219:
@@ -663,7 +669,7 @@ L_0219:
 	movlw		0x0D		;b'0000 1101',' ',.13
 	subwf		REG07A,W
 	btfss		CARRY
-	goto		L_01DD
+	    goto	L_01DD
 	movf		REG078,W
 	movwf		REG024
 	movlw		0x3F		;b'0011 1111','?',.63
@@ -677,7 +683,8 @@ L_0224:
 	movwf		STATUS
 	swapf		TMP_W,F
 	swapf		TMP_W,W
-	retfie	
+	retfie
+;*******************************************************************************
 L_022B:
 	bcf		RA2
 	movlw		0x7F		;b'0111 1111','',.127
@@ -1361,9 +1368,9 @@ L_048B:
 L_048D:
 	addlw		0xFF		;b'1111 1111','я',.255
 	btfss		ZERO
-	goto		L_048B
+	    goto	L_048B
 	btfss		REG030,0
-	goto		L_0496
+	    goto	L_0496
 	bcf		RP0
 	bcf		RP1
 	bsf		RA6
