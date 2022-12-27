@@ -23,17 +23,17 @@ REG021	equ	021h
 REG022	equ	022h
 REG023	equ	023h
 REG024	equ	024h
-REG025	equ	025h
-REG026	equ	026h
-REG027	equ	027h
+BAL_TMP	equ	025h
+BASS_TMP	equ	026h
+CNL_TMP	equ	027h
 REG028	equ	028h
 REG029	equ	029h
 REG02A	equ	02Ah
-REG02B	equ	02Bh
+PAMP_TMP	equ	02Bh
 REG02C	equ	02Ch
 REG02D	equ	02Dh
-REG02E	equ	02Eh
-REG02F	equ	02Fh
+TRBL_TMP	equ	02Eh
+VOL_TMP	equ	02Fh
 REG030	equ	030h
 REG031	equ	031h
 REG032	equ	032h
@@ -61,11 +61,28 @@ REG07B	equ	07Bh
 REG07C	equ	07Ch
 REG07D	equ	07Dh
 TMP_W	equ	07Eh
+	
+psect	edata
+	DW	0X53,0x74,0x61,0x6e,0x64,0x20,0x62,0x79,0
+	DW	0x56,0x6f,0x6c,0x75,0x6d,0x65,0
+	DW	0x54,0x72,0x65,0x62,0x6c,0x65,0
+	DW	0x42,0x61,0x73,0x73,0
+	DW	0x42,0x61,0x6c,0x61,0x6e,0x63,0x65,0
+	DW	0x50,0x72,0x65,0x61,0x6d,0x70,0x6c,0x69,0x66,0x65,0x72,0
+	DW	0x43,0x68,0x65,0x6e,0x61,0x6c,0
+	DW	0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff
+	DW	0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff
+	DW	0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff
+	DW	0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff
+	DW	0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff
+	DW	0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff
+	DW	0x20,0x53,0x55,0x50,0x45,0x52,0x2d,0x20
+	DW	0x20,0x4e,0x41,0x53,0x54,0x59,0x41,0x20
+	DW	0x0a,0x08,0x0a,0x20,0x00,0x01,0xff,0xff	
 
 
 
-
-psect ResVect,class=CODE,abs,delta=2
+psect ResVect, class=CODE, abs, delta=2
 	org	0x0000
 ResetVector:
 	goto		start
@@ -123,77 +140,80 @@ pause1:
 	    goto	pause1
 	call		start3
 	call		start4
+;*******************************************************************************
+; Чтение настроек из EEPROM
 	movlw		0x78		;b'0111 1000','x',.120
 	bsf		RP0
 	movwf		EEADR
 	bsf		EECON1,0
 	movf		EEDATA,W
 	bcf		RP0
-	movwf		REG02F
+	movwf		VOL_TMP
 	movlw		0x79		;b'0111 1001','y',.121
 	bsf		RP0
 	movwf		EEADR
 	bsf		EECON1,0
 	movf		EEDATA,W
 	bcf		RP0
-	movwf		REG02E
+	movwf		TRBL_TMP
 	movlw		0x7A		;b'0111 1010','z',.122
 	bsf		RP0
 	movwf		EEADR
 	bsf		EECON1,0
 	movf		EEDATA,W
 	bcf		RP0
-	movwf		REG026
+	movwf		BASS_TMP
 	movlw		0x7B		;b'0111 1011','{',.123
 	bsf		RP0
 	movwf		EEADR
 	bsf		EECON1,0
 	movf		EEDATA,W
 	bcf		RP0
-	movwf		REG025
+	movwf		BAL_TMP
 	movlw		0x7C		;b'0111 1100','|',.124
 	bsf		RP0
 	movwf		EEADR
 	bsf		EECON1,0
 	movf		EEDATA,W
 	bcf		RP0
-	movwf		REG02B
+	movwf		PAMP_TMP
 	movlw		0x7D		;b'0111 1101','}',.125
 	bsf		RP0
 	movwf		EEADR
 	bsf		EECON1,0
 	movf		EEDATA,W
 	bcf		RP0
-	movwf		REG027
+	movwf		CNL_TMP
+;*******************************************************************************
 	call		L_028F
 	call		L_056E
 L_005E:
 	call		L_04A2
 	movf		REG02C,W
 	btfsc		ZERO
-	goto		L_0096
+	    goto	L_0096
 	movf		REG02C,W
 	xorlw		0x04		;b'0000 0100',' ',.04
 	btfss		ZERO
-	goto		L_006C
+	    goto	L_006C
 	call		L_034C
 L_0067:
 	movf		REG02C,F
 	btfsc		ZERO
-	goto		L_006C
+	    goto	L_006C
 	call		L_04A2
 	goto		L_0067
 L_006C:
 	movf		REG03B,F
 	btfsc		ZERO
-	goto		L_007A
+	    goto	L_007A
 	goto		L_0084
 L_0070:
 	call		L_059A
 L_0071:
 	movf		REG02C,F
 	btfsc		ZERO
-	goto		L_0084
+	    goto	L_0084
 	call		L_04A2
 	goto		L_0071
 L_0076:
@@ -206,13 +226,13 @@ L_007A:
 	movf		REG02C,W
 	xorlw		0x01		;b'0000 0001',' ',.01
 	btfsc		ZERO
-	goto		L_0070
+	    goto	L_0070
 	xorlw		0x03		;b'0000 0011',' ',.03
 	btfsc		ZERO
-	goto		L_0076
+	    goto	L_0076
 	xorlw		0x01		;b'0000 0001',' ',.01
 	btfsc		ZERO
-	goto		L_0078
+	    goto	L_0078
 L_0084:
 	call		L_056E
 	movlw		0xFF		;b'1111 1111','я',.255
@@ -226,19 +246,19 @@ L_008B:
 	subwf		COUNT1,F
 	movlw		0x00		;b'0000 0000',' ',.00
 	btfss		CARRY
-	decf		COUNT2,F
+	    decf	COUNT2,F
 	subwf		COUNT2,F
 	incf		COUNT1,W
 	btfsc		ZERO
-	incf		COUNT2,W
+	    incf	COUNT2,W
 	btfss		ZERO
-	goto		L_008B
+	    goto	L_008B
 L_0096:
-	decfsz	REG028,W
-	goto		L_00A2
+	decfsz		REG028,W
+	    goto	L_00A2
 	clrf		REG028
-	decfsz	REG02A,W
-	goto		L_009D
+	decfsz		REG02A,W
+	    goto	L_009D
 	call		L_02D4
 	goto		L_009E
 L_009D:
@@ -251,24 +271,24 @@ L_009E:
 L_00A2:
 	movf		REG024,W
 	btfsc		ZERO
-	goto		L_010D
+	    goto	L_010D
 	movf		REG024,W
 	xorlw		0x0C		;b'0000 1100',' ',.12
 	btfss		ZERO
-	goto		L_00AE
+	    goto	L_00AE
 	movf		REG021,W
 	iorwf		REG020,W
 	btfss		ZERO
-	goto		L_00AE
+	    goto	L_00AE
 	call		L_034C
 L_00AE:
 	movf		REG03B,F
 	btfsc		ZERO
-	goto		L_00DC
+	    goto	L_00DC
 	goto		L_0104
 L_00B2:
-	clrf		REG027
-	incf		REG027,F
+	clrf		CNL_TMP
+	incf		CNL_TMP,F
 	goto		L_0104
 L_00B5:
 	movlw		0x02		;b'0000 0010',' ',.02
@@ -276,27 +296,27 @@ L_00B5:
 L_00B7:
 	movlw		0x03		;b'0000 0011',' ',.03
 L_00B8:
-	movwf		REG027
+	movwf		CNL_TMP
 	goto		L_0104
 L_00BA:
 	movf		REG021,W
 	iorwf		REG020,W
 	btfss		ZERO
-	goto		L_0104
+	    goto	L_0104
 	call		L_059A
 	goto		L_0104
 L_00C0:
 	movf		REG021,W
 	iorwf		REG020,W
 	btfss		ZERO
-	goto		L_0104
+	    goto	L_0104
 	call		L_058B
 	goto		L_0104
 L_00C6:
 	movf		REG021,W
 	iorwf		REG020,W
 	btfss		ZERO
-	goto		L_0104
+	    goto	L_0104
 	call		L_05AC
 	goto		L_0104
 L_00CC:
@@ -327,43 +347,43 @@ L_00DC:
 	movf		REG024,W
 	xorlw		0x01		;b'0000 0001',' ',.01
 	btfsc		ZERO
-	goto		L_00B2
+	    goto	L_00B2
 	xorlw		0x03		;b'0000 0011',' ',.03
 	btfsc		ZERO
-	goto		L_00B5
+	    goto	L_00B5
 	xorlw		0x01		;b'0000 0001',' ',.01
 	btfsc		ZERO
-	goto		L_00B7
+	    goto	L_00B7
 	xorlw		0x0E		;b'0000 1110',' ',.14
 	btfsc		ZERO
-	goto		L_00BA
+	    goto	L_00BA
 	xorlw		0x1D		;b'0001 1101','',.29
 	btfsc		ZERO
-	goto		L_00C0
+	    goto	L_00C0
 	xorlw		0x01		;b'0000 0001',' ',.01
 	btfsc		ZERO
-	goto		L_00C6
+	    goto	L_00C6
 	xorlw		0x04		;b'0000 0100',' ',.04
 	btfsc		ZERO
-	goto		L_00CC
+	    goto	L_00CC
 	xorlw		0x03		;b'0000 0011',' ',.03
 	btfsc		ZERO
-	goto		L_00CE
+	    goto	L_00CE
 	xorlw		0x01		;b'0000 0001',' ',.01
 	btfsc		ZERO
-	goto		L_00D0
+	    goto	L_00D0
 	xorlw		0x3C		;b'0011 1100','<',.60
 	btfsc		ZERO
-	goto		L_00D3
+	    goto	L_00D3
 	xorlw		0x07		;b'0000 0111',' ',.07
 	btfsc		ZERO
-	goto		L_00D5
+	    goto	L_00D5
 	xorlw		0x01		;b'0000 0001',' ',.01
 	btfsc		ZERO
-	goto		L_00D7
+	    goto	L_00D7
 	xorlw		0x03		;b'0000 0011',' ',.03
 	btfsc		ZERO
-	goto		L_00D9
+	    goto	L_00D9
 L_0104:
 	clrf		REG024
 	call		L_056E
@@ -378,43 +398,43 @@ L_010D:
 	movf		REG021,W
 	iorwf		REG020,W
 	btfsc		ZERO
-	goto		L_0117
+	    goto	L_0117
 	movlw		0x01		;b'0000 0001',' ',.01
 	subwf		REG020,F
 	movlw		0x00		;b'0000 0000',' ',.00
 	btfss		CARRY
-	decf		REG021,F
+	    decf	REG021,F
 	subwf		REG021,F
 L_0117:
 	movf		REG023,W
 	iorwf		REG022,W
 	btfsc		ZERO
-	goto		L_0124
+	    goto	L_0124
 	movf		REG02D,W
 	btfsc		ZERO
-	goto		L_0124
+	    goto	L_0124
 	movlw		0x01		;b'0000 0001',' ',.01
 	subwf		REG022,F
 	movlw		0x00		;b'0000 0000',' ',.00
 	btfss		CARRY
-	decf		REG023,F
+	    decf	REG023,F
 	subwf		REG023,F
 L_0124:
 	decf		REG022,W
 	iorwf		REG023,W
 	btfss		ZERO
-	goto		L_005E
+	    goto	L_005E
 	clrf		REG02D
 	incf		REG02D,F
 	call		L_056E
 L_012B:
 	bsf		RP0
 	btfsc		EECON1,1
-	goto		L_012B
+	    goto	L_012B
 	movlw		0x78		;b'0111 1000','x',.120
 	movwf		EEADR
 	bcf		RP0
-	movf		REG02F,W
+	movf		VOL_TMP,W
 	bsf		RP0
 	movwf		EEDATA
 	bcf		CARRY
@@ -436,7 +456,7 @@ L_0141:
 	movlw		0x79		;b'0111 1001','y',.121
 	movwf		EEADR
 	bcf		RP0
-	movf		REG02E,W
+	movf		TRBL_TMP,W
 	bsf		RP0
 	movwf		EEDATA
 	bcf		CARRY
@@ -458,7 +478,7 @@ L_0156:
 	movlw		0x7A		;b'0111 1010','z',.122
 	movwf		EEADR
 	bcf		RP0
-	movf		REG026,W
+	movf		BASS_TMP,W
 	bsf		RP0
 	movwf		EEDATA
 	bcf		CARRY
@@ -480,7 +500,7 @@ L_016B:
 	movlw		0x7B		;b'0111 1011','{',.123
 	movwf		EEADR
 	bcf		RP0
-	movf		REG025,W
+	movf		BAL_TMP,W
 	bsf		RP0
 	movwf		EEDATA
 	bcf		CARRY
@@ -502,7 +522,7 @@ L_0180:
 	movlw		0x7C		;b'0111 1100','|',.124
 	movwf		EEADR
 	bcf		RP0
-	movf		REG02B,W
+	movf		PAMP_TMP,W
 	bsf		RP0
 	movwf		EEDATA
 	bcf		CARRY
@@ -524,7 +544,7 @@ L_0195:
 	movlw		0x7D		;b'0111 1101','}',.125
 	movwf		EEADR
 	bcf		RP0
-	movf		REG027,W
+	movf		CNL_TMP,W
 	bsf		RP0
 	movwf		EEDATA
 	bcf		CARRY
@@ -795,7 +815,7 @@ L_028F:
 	movlw		0x88		;b'1000 1000','€',.136
 	call		L_0480
 	bcf		RP0
-	movf		REG02F,W
+	movf		VOL_TMP,W
 	sublw		0x40		;b'0100 0000','@',.64
 	call		L_0480
 	bcf		RP0
@@ -806,19 +826,19 @@ L_028F:
 L_029B:
 	clrf		COUNT3
 	movlw		0x21		;b'0010 0001','!',.33
-	subwf		REG025,W
+	subwf		BAL_TMP,W
 	btfsc		CARRY
 	goto		L_02A3
-	movf		REG025,W
+	movf		BAL_TMP,W
 	sublw		0x20		;b'0010 0000',' ',.32
 	movwf		COUNT3
 L_02A3:
 	clrf		COUNT4
 	movlw		0x21		;b'0010 0001','!',.33
-	subwf		REG025,W
+	subwf		BAL_TMP,W
 	btfss		CARRY
 	goto		L_02AB
-	movf		REG025,W
+	movf		BAL_TMP,W
 	addlw		0xDF		;b'1101 1111','Я',.223
 	movwf		COUNT4
 L_02AB:
@@ -838,10 +858,10 @@ L_02AB:
 	addlw		0xE0		;b'1110 0000','а',.224
 	call		L_0480
 	bcf		RP0
-	movf		REG027,W
+	movf		CNL_TMP,W
 	addlw		0x3F		;b'0011 1111','?',.63
 	movwf		REG033
-	movf		REG02B,F
+	movf		PAMP_TMP,F
 	btfss		ZERO
 	goto		L_02C3
 	movlw		0x18		;b'0001 1000','',.24
@@ -850,14 +870,14 @@ L_02C3:
 	movf		REG033,W
 	call		L_0480
 	bcf		RP0
-	movf		REG026,W
+	movf		BASS_TMP,W
 	addlw		0x01		;b'0000 0001',' ',.01
 	movwf		FSR
 	call		L_000B
 	addlw		0x60		;b'0110 0000','`',.96
 	call		L_0480
 	bcf		RP0
-	movf		REG02E,W
+	movf		TRBL_TMP,W
 	addlw		0x01		;b'0000 0001',' ',.01
 	movwf		FSR
 	call		L_000B
@@ -868,56 +888,56 @@ L_02D2:
 L_02D4:
 	goto		L_0303
 L_02D5:
-	incf		REG02F,F
+	incf		VOL_TMP,F
 	movlw		0x41		;b'0100 0001','A',.65
-	subwf		REG02F,W
+	subwf		VOL_TMP,W
 	btfss		CARRY
 	return	
 	movlw		0x40		;b'0100 0000','@',.64
-	movwf		REG02F
+	movwf		VOL_TMP
 	return	
 L_02DD:
-	incf		REG02E,F
+	incf		TRBL_TMP,F
 	movlw		0x11		;b'0001 0001','',.17
-	subwf		REG02E,W
+	subwf		TRBL_TMP,W
 	btfss		CARRY
 	return	
 	movlw		0x10		;b'0001 0000',' ',.16
-	movwf		REG02E
+	movwf		TRBL_TMP
 	return	
 L_02E5:
-	incf		REG026,F
+	incf		BASS_TMP,F
 	movlw		0x11		;b'0001 0001','',.17
-	subwf		REG026,W
+	subwf		BASS_TMP,W
 	btfss		CARRY
 	return	
 	movlw		0x10		;b'0001 0000',' ',.16
-	movwf		REG026
+	movwf		BASS_TMP
 	return	
 L_02ED:
-	incf		REG025,F
+	incf		BAL_TMP,F
 	movlw		0x41		;b'0100 0001','A',.65
-	subwf		REG025,W
+	subwf		BAL_TMP,W
 	btfss		CARRY
 	return	
 	movlw		0x40		;b'0100 0000','@',.64
-	movwf		REG025
+	movwf		BAL_TMP
 	return	
 L_02F5:
-	clrf		REG02B
-	incf		REG02B,F
+	clrf		PAMP_TMP
+	incf		PAMP_TMP,F
 	return	
 L_02F8:
 	movf		REG021,W
 	iorwf		REG020,W
 	btfsc		ZERO
-	incf		REG027,F
+	incf		CNL_TMP,F
 	movlw		0x04		;b'0000 0100',' ',.04
-	subwf		REG027,W
+	subwf		CNL_TMP,W
 	btfss		CARRY
 	return	
-	clrf		REG027
-	incf		REG027,F
+	clrf		CNL_TMP
+	incf		CNL_TMP,F
 	return	
 L_0303:
 	movf		REG02D,W
@@ -943,42 +963,42 @@ L_0303:
 L_0317:
 	goto		L_0338
 L_0318:
-	decfsz	REG02F,F
+	decfsz	VOL_TMP,F
 	return	
-	clrf		REG02F
-	incf		REG02F,F
+	clrf		VOL_TMP
+	incf		VOL_TMP,F
 	return	
 L_031D:
-	decfsz	REG02E,F
+	decfsz	TRBL_TMP,F
 	return	
-	clrf		REG02E
-	incf		REG02E,F
+	clrf		TRBL_TMP
+	incf		TRBL_TMP,F
 	return	
 L_0322:
-	decfsz	REG026,F
+	decfsz	BASS_TMP,F
 	return	
-	clrf		REG026
-	incf		REG026,F
+	clrf		BASS_TMP
+	incf		BASS_TMP,F
 	return	
 L_0327:
-	decfsz	REG025,F
+	decfsz	BAL_TMP,F
 	return	
-	clrf		REG025
-	incf		REG025,F
+	clrf		BAL_TMP
+	incf		BAL_TMP,F
 	return	
 L_032C:
-	clrf		REG02B
+	clrf		PAMP_TMP
 	return	
 L_032E:
 	movf		REG021,W
 	iorwf		REG020,W
 	btfsc		ZERO
-	decf		REG027,F
-	movf		REG027,F
+	decf		CNL_TMP,F
+	movf		CNL_TMP,F
 	btfss		ZERO
 	return	
 	movlw		0x03		;b'0000 0011',' ',.03
-	movwf		REG027
+	movwf		CNL_TMP
 	return	
 L_0338:
 	movf		REG02D,W
@@ -1067,19 +1087,19 @@ L_0380:
 	call		L_040B
 	goto		L_039F
 L_0383:
-	movf		REG02F,W
+	movf		VOL_TMP,W
 	call		L_04C3
 	goto		L_03B2
 L_0386:
-	movf		REG02E,W
+	movf		TRBL_TMP,W
 	call		L_0562
 	goto		L_03B2
 L_0389:
-	movf		REG026,W
+	movf		BASS_TMP,W
 	call		L_0562
 	goto		L_03B2
 L_038C:
-	movf		REG025,W
+	movf		BAL_TMP,W
 	call		L_045A
 	goto		L_03B2
 L_038F:
@@ -1087,7 +1107,7 @@ L_038F:
 	movwf		REG032
 	movlw		0x01		;b'0000 0001',' ',.01
 	call		L_0544
-	movf		REG02B,W
+	movf		PAMP_TMP,W
 	addlw		0x30		;b'0011 0000','0',.48
 	call		L_0516
 	goto		L_03B2
@@ -1096,7 +1116,7 @@ L_0397:
 	movwf		REG032
 	movlw		0x01		;b'0000 0001',' ',.01
 	call		L_0544
-	movf		REG027,W
+	movf		CNL_TMP,W
 	addlw		0x04		;b'0000 0100',' ',.04
 	call		L_0516
 	goto		L_03B2
@@ -1303,7 +1323,7 @@ L_044B:
 	movlw		0x78		;b'0111 1000','x',.120
 	goto		L_0516
 L_0457:
-	movf		REG027,W
+	movf		CNL_TMP,W
 	addlw		0x04		;b'0000 0100',' ',.04
 	goto		L_0516
 L_045A:
@@ -1544,7 +1564,7 @@ L_0528:
 	movf		REG030,W
 	xorlw		0xFF		;b'1111 1111','я',.255
 	btfsc		ZERO
-	return	
+		return	
 	goto		L_0528
 L_052E:
 	movlw		0x96		;b'1001 0110','–',.150
@@ -1558,23 +1578,23 @@ L_0534:
 	subwf		REG032,F
 	movlw		0x00		;b'0000 0000',' ',.00
 	btfss		CARRY
-	decf		REG033,F
+		decf	REG033,F
 	subwf		REG033,F
 	incf		REG032,W
 	btfsc		ZERO
-	incf		REG033,W
+		incf	REG033,W
 	btfss		ZERO
-	goto		L_0534
-	bcf		RA2
+		goto	L_0534
+	bcf			RA2
 	movlw		0x80		;b'1000 0000','Ђ',.128
 	call		L_0516
-	bsf		RA2
+	bsf			RA2
 	return	
 L_0544:
 	movwf		REG033
-	bcf		RA2
-	decfsz	REG033,W
-	goto		L_054B
+	bcf			RA2
+	decfsz		REG033,W
+		goto	L_054B
 	movf		REG032,W
 	addlw		0x7F		;b'0111 1111','',.127
 	call		L_0516
@@ -1582,12 +1602,12 @@ L_054B:
 	movf		REG033,W
 	xorlw		0x02		;b'0000 0010',' ',.02
 	btfss		ZERO
-	goto		L_0552
+		goto	L_0552
 	movf		REG032,W
 	addlw		0xBF		;b'1011 1111','ї',.191
 	call		L_0516
 L_0552:
-	bsf		RA2
+	bsf			RA2
 	return	
 L_0554:
 	movwf		REG032
@@ -1595,14 +1615,14 @@ L_0554:
 L_0556:
 	movf		REG030,W
 	btfsc		REG032,0
-	addwf		REG031,F
-	bcf		CARRY
-	rlf		REG030,F
-	bcf		CARRY
-	rrf		REG032,F
+		addwf	REG031,F
+	bcf			CARRY
+	rlf			REG030,F
+	bcf			CARRY
+	rrf			REG032,F
 	movf		REG032,F
 	btfss		ZERO
-	goto		L_0556
+		goto	L_0556
 	movf		REG031,W
 	return	
 L_0562:
@@ -1612,7 +1632,7 @@ L_0564:
 	movf		COUNT4,W
 	subwf		REG036,W
 	btfsc		CARRY
-	goto		L_056C
+		goto	L_056C
 	movlw		0xFF		;b'1111 1111','я',.255
 	call		L_0516
 	incf		REG036,F
@@ -1624,7 +1644,7 @@ L_056E:
 	call		L_052E
 	movf		REG02D,F
 	btfss		ZERO
-	goto		L_0576
+		goto	L_0576
 	movlw		0x05		;b'0000 0101',' ',.05
 	movwf		REG032
 	movlw		0x01		;b'0000 0001',' ',.01
@@ -1659,21 +1679,21 @@ L_058B:
 	movlw		0x07		;b'0000 0111',' ',.07
 	subwf		REG02D,W
 	btfss		CARRY
-	return	
+		return	
 	clrf		REG02D
 	incf		REG02D,F
 	return	
 L_0593:
-	bsf		RA6
-	bsf		RA7
+	bsf			RA6
+	bsf			RA7
 	call		L_05B1
-	bcf		RA6
+	bcf			RA6
 	call		L_05B1
-	bcf		RA7
+	bcf			RA7
 	return	
 L_059A:
-	decfsz	REG03A,W
-	goto		L_059E
+	decfsz		REG03A,W
+		goto	L_059E
 	clrf		REG03A
 	return	
 L_059E:
@@ -1682,20 +1702,20 @@ L_059E:
 	return	
 L_05A1:
 	call		L_05B1
-	bcf		RP0
-	bsf		RA7
+	bcf			RP0
+	bsf			RA7
 	call		L_05B1
-	bcf		RA7
+	bcf			RA7
 	return	
 L_05A7:
-	bcf		RP0
-	bsf		RA7
+	bcf			RP0
+	bsf			RA7
 	call		L_05B1
-	bsf		RA6
+	bsf			RA6
 	return	
 L_05AC:
-	decfsz	REG02D,F
-	return	
+	decfsz		REG02D,F
+		return	
 	movlw		0x06		;b'0000 0110',' ',.06
 	movwf		REG02D
 	return	
