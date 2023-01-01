@@ -47,7 +47,7 @@ REPT		    3			;
     ENDM				;
     CALL	    pkg_in_port		;
     CALL	    p39mks		;
-    MOVLW	    FUNCSET		;
+    MOVLW	    FUNCSET		;  четырехпроводный режим
     MOVWF	    _PKG_LCD		;
     CALL	    pkg_in_port		; далее работаем в четырехпроводном
     CALL	    p39mks		; режиме
