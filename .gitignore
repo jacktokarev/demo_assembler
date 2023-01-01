@@ -28,3 +28,5 @@ nbproject/
 # Misc
 .svn
 *.bak
+*.log
+*.inx
