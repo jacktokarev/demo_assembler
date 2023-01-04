@@ -1,5 +1,5 @@
 #include		"Global.inc"
-#include		"TDA7313.inc"
+;#include		"TDA7313.inc"
 
 EXTRN	_short_pause
 

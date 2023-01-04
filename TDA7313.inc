@@ -11,6 +11,7 @@ SLAVEADDR		equ		10001000B	; R/W Flag (8th bit) must be 0 (Read)
 ; Volume
 AP_VOL			equ		00000000B	;
 ; -10 dB step:
+AP_VOL_0		equ		00000000B	;
 AP_VOL_10		equ		00001000B	;
 AP_VOL_20		equ		00010000B	;
 AP_VOL_30		equ		00011000B	;
@@ -19,10 +20,11 @@ AP_VOL_50		equ		00101000B	;
 AP_VOL_60		equ		00110000B	;
 AP_VOL_70		equ		00111000B	;
 ; -1,25 dB step:
+AP_VOL_0c0		equ		00000000B	;
 AP_VOL_1c25		equ		00000001B	;
 AP_VOL_2c5		equ		00000010B	;
 AP_VOL_3c75		equ		00000011B	;
-AP_VOL_5		equ		00000100B	;
+AP_VOL_5c0		equ		00000100B	;
 AP_VOL_6c25		equ		00000101B	;
 AP_VOL_7c5		equ		00000110B	;
 AP_VOL_8c75		equ		00000111B	;
@@ -33,15 +35,17 @@ AP_ATT_LF		equ		10000000B	; Front Left
 AP_ATT_RF		equ		10100000B	; Front Right
 AP_ATT_LR		equ		11000000B	; Rear Left
 AP_ATT_RR		equ		11100000B	; Rear Right
-; -10 dB step:
+; -10 dB step
+AP_ATT_0		equ		00000000B	;
 AP_ATT_10		equ		00001000B	;
 AP_ATT_20		equ		00010000B	;
 AP_ATT_30		equ		00011000B	;
 ; -1,25 step:
+AP_ATT_0c0		equ		00000000B	;
 AP_ATT_1c25		equ		00000001B	;
 AP_ATT_2c5		equ		00000010B	;
 AP_ATT_3c75		equ		00000011B	;
-AP_ATT_5		equ		00000100B	;
+AP_ATT_5c0		equ		00000100B	;
 AP_ATT_6c25		equ		00000101B	;
 AP_ATT_7c5		equ		00000110B	;
 AP_ATT_8c75		equ		00000111B	;

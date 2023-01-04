@@ -24,14 +24,14 @@ iic_send_bit:
 	movf		BIT_COUNTER,F
 	btfsc		ZERO
 	    goto	_iic_ack_bit; закончена передача байта
-	BANKSEL		IIC_PORT
+	BANKSEL		IIC_DATA
 	decf		BIT_COUNTER,F
 	rlf			ROTATED_BYTE,F
 	btfss		CARRY
-		goto	down_SCL
+		goto	down_SDA
 	bsf			SDA
 	goto		p_SCL
-down_SCL:
+down_SDA:
 	bcf			SDA
 p_SCL:
 	call		_iic_pulse_SCL
@@ -85,11 +85,13 @@ _iic_pulse_SCL:
 ;*******************************************************************************	
 _iic_ack_bit:
 	BANKSEL		CTRL_IIC_PORT
-	bsf			CTRL_IIC_PORT, SCL_BIT
+	bsf			CTRL_IIC_PORT, SDA_BIT
 	call		_short_pause
 	call		_iic_pulse_SCL
 	BANKSEL		CTRL_IIC_PORT
-	bcf			CTRL_IIC_PORT, SCL_BIT
+	bcf			CTRL_IIC_PORT, SDA_BIT
+	BANKSEL		IIC_PORT
+	;bcf			SDA
 	return
 ;*******************************************************************************	
 _iic_stop_condition:

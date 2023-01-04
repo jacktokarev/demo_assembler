@@ -110,14 +110,14 @@ TMP_W:		DS	1	;		equ	07Eh
 ;TMP_W	equ	07Eh
 	
 psect	edata
-	DW	0X53,0x74,0x61,0x6e,0x64,0x20,0x62,0x79,0
-	DW	0x56,0x6f,0x6c,0x75,0x6d,0x65,0
-	DW	0x54,0x72,0x65,0x62,0x6c,0x65,0
-	DW	0x42,0x61,0x73,0x73,0
-	DW	0x42,0x61,0x6c,0x61,0x6e,0x63,0x65,0
-	DW	0x50,0x72,0x65,0x61,0x6d,0x70,0x6c,0x69,0x66,0x65,0x72,0
-	DW	0x43,0x68,0x65,0x6e,0x61,0x6c,0
-	DW	0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff
+	DW	S?,t?,a?,n?,d?,SPACE?,b?,y?,0
+	DW	V?,o?,l?,u?,m?,e?,0
+	DW	T?,r?,e?,b?,l?,e?,0
+	DW	B?,a?,s?,s?,0
+	DW	B?,a?,l?,a?,n?,c?,e?,0
+	DW	P?,r?,e?,a?,m?,p?,l?,i?,f?,e?,r?,0
+	DW	C?,h?,a?,n?,e?,l?,0,0xff
+	DW	0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff
 	DW	0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff
 	DW	0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff
 	DW	0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff
@@ -171,7 +171,7 @@ L_000B:
 	retlw		0x08		;b'0000 1000',' ',.08
 ;*******************************************************************************
 start:
-	bcf		STATUS,7	;банки 0, 1 при косвенной адресации 
+	bcf			STATUS,7	;банки 0, 1 при косвенной адресации 
 	movlw		0x20		;адрес первого регистра диапозона
 	movwf		FSR
 	movlw		0x30		;адрес последнего регистра диапозона
@@ -1001,7 +1001,8 @@ IRP	BT, 0x1F, 0x11, 0x1D, 0x19, 0x1D, 0x11, 0x1F, 0x00
 ;*******************************************************************************
 L_028F:
 	call		_iic_start_condition
-	movlw		0x88		;b'1000 1000','€',.136
+;	movlw		0x88		;b'1000 1000','€',.136
+	movlw		SLAVEADDR
 	call		_iic_send_byte
 ;	bcf		RP0
 	BANKSEL		VOL_TMP
@@ -1012,8 +1013,9 @@ L_028F:
 	BANKSEL		REG03A
 	decfsz		REG03A,W
 	    goto	L_029B
-	movlw		0x43		;b'0100 0011','C',.67
-	goto		L_02D2
+	;movlw		0x43		;b'0100 0011','C',.67
+	movlw		AP_ASW|AP_ASW_CNL_4
+	goto		icc_msg_end
 L_029B:
 	clrf		COUNT3
 	movlw		0x21		;b'0010 0001','!',.33
@@ -1041,15 +1043,18 @@ L_02AB:
 	movf		COUNT3,W
 	addlw		0xA0		;b'1010 0000',' ',.160
 	call		_iic_send_byte
-	bcf		RP0
+;	bcf		RP0
+	BANKSEL		COUNT4
 	movf		COUNT4,W
 	addlw		0xC0		;b'1100 0000','А',.192
 	call		_iic_send_byte
-	bcf		RP0
+;	bcf		RP0
+	BANKSEL		COUNT3
 	movf		COUNT3,W
 	addlw		0xE0		;b'1110 0000','а',.224
 	call		_iic_send_byte
-	bcf		RP0
+;	bcf		RP0
+	BANKSEL		CNL_TMP
 	movf		CNL_TMP,W
 	addlw		0x3F		;b'0011 1111','?',.63
 	movwf		CURSOR_POSITION_LCD
@@ -1061,7 +1066,8 @@ L_02AB:
 L_02C3:
 	movf		CURSOR_POSITION_LCD,W
 	call		_iic_send_byte
-	bcf		RP0
+;	bcf		RP0
+	BANKSEL		BASS_TMP
 	movf		BASS_TMP,W
 	addlw		0x01		;b'0000 0001',' ',.01
 	movwf		FSR
@@ -1074,7 +1080,7 @@ L_02C3:
 	movwf		FSR
 	call		L_000B
 	addlw		0x70		;b'0111 0000','p',.112
-L_02D2:
+icc_msg_end:
 	call		_iic_send_byte
 	goto		_iic_stop_condition
 ;*******************************************************************************
@@ -1627,6 +1633,7 @@ L_045C:
 L_046A:
 ;	movlw		0x3E		;b'0011 1110','>',.62
 	movlw		RIGHT?
+	call		_print_smb
 ;	call		out_w_lcd
 ;	movwf		_PKG_LCD
 ;	movlw		0x3C		;b'0011 1100','<',.60
@@ -1829,7 +1836,7 @@ init_ports:
 	movlw		0xE0		;b'1110 0000','а',.224
 	movwf		TRISB
 	
-	bsf		OSCF		; частота внутреннего генератора 4 MHz
+	bsf			OSCF		; частота внутреннего генератора 4 MHz
 	
 	movlw		0x07		;b'0000 0111',' ',.07
 ;	bcf		RP0
@@ -1896,7 +1903,7 @@ disp_off:
 	movwf		BIT_POSITION
 	clrf		CURSOR_POSITION_LCD
 ;	bcf		RA2
-	bcf		CTRL_LCD, RS_LCD
+	bcf			CTRL_LCD, RS_LCD
 ;	movlw		0x01		; очистить дисплей
 	movlw		CLRDISP
 ;	movwf		_PKG_LCD
@@ -1916,14 +1923,14 @@ L_0534:
 	btfss		ZERO
 	    goto	L_0534
 ;	bcf		RA2
-	bcf		CTRL_LCD, RS_LCD
+	bcf			CTRL_LCD, RS_LCD
 ;	movlw		0x80		;
 	movlw		DDRADDR|0x00
 ;	movwf		_PKG_LCD
 ;	call		out_w_lcd
 	call		_print_smb
 ;	bsf		RA2		; режим вывода символов
-	bsf		CTRL_LCD, RS_LCD
+	bsf			CTRL_LCD, RS_LCD
 	return
 ;*******************************************************************************
 set_DDRAM_ADDR:
