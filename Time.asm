@@ -27,7 +27,12 @@ tim3:
     DECFSZ	TM_COUNT_HIEGHT, F	;
 	GOTO	tim1			;
     RETURN				;
+	
+_short_pause:
+	nop		
+	nop		
+	return
 
-    GLOBAL	_pause			;
+    GLOBAL	_pause, _short_pause;
 
     END					;

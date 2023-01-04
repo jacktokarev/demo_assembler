@@ -53,17 +53,17 @@ REPT		    3			;
     CALL	    p39mks		; режиме
  ; настройка функций ЖКИ
     MOVLW	    FUNCSET|FUNCSETN;|FUNCSETF	;
-    MOVWF	    _PKG_LCD		; двухстрочный режим
+;    MOVWF	    _PKG_LCD		; двухстрочный режим
     CALL	    _print_smb		;
 
 ;******** Продолжение инициализации DISPLAY ON/OFF MODE ************************
     MOVLW	    DISPCTRL|DISPCTRLD;|DISPCTRLC|DISPCTRLB;
-    MOVWF	    _PKG_LCD		; записать это значение в байт сообщения
+ ;   MOVWF	    _PKG_LCD		; записать это значение в байт сообщения
     CALL	    _print_smb		; запись в порт
 
 ;******** Продолжение инициализации DISPLAY CLEAR ******************************
     MOVLW	    CLRDISP		;
-    MOVWF	    _PKG_LCD		; записать это значение в байт сообщения
+;    MOVWF	    _PKG_LCD		; записать это значение в байт сообщения
     CALL	    _send_lcd		; запись в порт
 
 ;******** Пауза более 1,53 мс **************************************************
@@ -71,7 +71,7 @@ REPT		    3			;
 
 ;******** Продолжение инициализации ENTRY MODE SET *****************************
     MOVLW	    EMSET|EMSETID	;
-    MOVWF	    _PKG_LCD		; записать это значение в байт сообщения
+;    MOVWF	    _PKG_LCD		; записать это значение в байт сообщения
     CALL	    _print_smb		; запись в порт
 
 ;******** Инициализация дисплея закончена **************************************
@@ -80,11 +80,13 @@ REPT		    3			;
 ;*******************************************************************************
 ;*******************************************************************************
 _print_smb:
-
+	BANKSEL		_PKG_LCD
+	MOVWF		_PKG_LCD
 ;******** Вывод информации *****************************************************
     CALL	    _send_lcd
-    CALL	    p39mks
-    RETURN
+	goto		p39mks
+;    CALL	    p39mks
+;    RETURN
 
 ;*******************************************************************************
 ;*******************************************************************************
@@ -94,22 +96,22 @@ pkg_in_port:	; выставление уровней на выводах LCD в 
 		; с данными отсылаемого пакета (полубайт пакета)
     BCF		    DATA_LCD, DB7_LCD	;
     BTFSC	    _PKG_LCD, BIT7	;
-	BSF	    DATA_LCD, DB7_LCD	;
+		BSF	    DATA_LCD, DB7_LCD	;
     BCF		    DATA_LCD, DB6_LCD	;
     BTFSC	    _PKG_LCD, BIT6	;
-	BSF	    DATA_LCD, DB6_LCD	;
+		BSF	    DATA_LCD, DB6_LCD	;
     BCF		    DATA_LCD, DB5_LCD	;
     BTFSC	    _PKG_LCD, BIT5	;
-	BSF	    DATA_LCD, DB5_LCD	;
+		BSF	    DATA_LCD, DB5_LCD	;
     BCF		    DATA_LCD, DB4_LCD	;
     BTFSC	    _PKG_LCD, BIT4	;
-	BSF	    DATA_LCD, DB4_LCD	;
+		BSF	    DATA_LCD, DB4_LCD	;
 
 write_lcd:	; отсылка команды записи данных в LCD
     BSF		    CTRL_LCD, E_LCD	; синхроимпульс в LCD
     BCF		    CTRL_LCD, E_LCD	;
     BTFSS	    _LCD_FLAGS, LPKGH	; пропуск, если передан старший и
-	RETURN				; выход, если передан младший полубайт
+		RETURN				; выход, если передан младший полубайт
     SWAPF	    _PKG_LCD, F		; смена мест полубайтов
     BCF		    _LCD_FLAGS, LPKGH	; сброс флага работы со старшим п-байтом
     GOTO	    pkg_in_port		; младший полубайт в порт
