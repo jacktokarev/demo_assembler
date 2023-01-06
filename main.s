@@ -18,26 +18,26 @@ CONFIG  CP = OFF              ; Flash Program Memory Code Protection bit (Code p
 ;==========================================================================
 ; Used Registers
 psect	udata_bank0
-REG020:		DS	1	;	equ	020h
-REG021:		DS	1	;	equ	021h
+REG020:		DS	1	;		equ	020h
+REG021:		DS	1	;		equ	021h
 REG022:		DS	1	;		equ	022h
 REG023:		DS	1	;		equ	023h
 REG024:		DS	1	;		equ	024h
-BAL_TMP:		DS	1	;		equ	025h
-BASS_TMP:		DS	1	;		equ	026h
-CNL_TMP:		DS	1	;		equ	027h
-REG028:		DS	1	;		equ	028h
-ENC_rot:		DS	1	;		equ	029h
-REG02A:		DS	1	;		equ	02Ah
-PAMP_TMP:		DS	1	;		equ	02Bh
-PRESSED_KEY:		DS	1	;		equ	02Ch
-WH8REG:		DS	1	;	equ	02Dh
-TRBL_TMP:		DS	1	;		equ	02Eh
-VOL_TMP:		DS	1	;		equ	02Fh
-TIME_pl1:		DS	1	;		equ	030h
-PKG_lcd:		DS	1	;		equ	031h
-BIT_POSITION:		DS	1	;		equ	032h
-CURSOR_POSITION_LCD:		DS	1	;		equ	033h
+BAL_TMP:	DS	1	;		equ	025h
+BASS_TMP:	DS	1	;		equ	026h
+CNL_TMP:	DS	1	;		equ	027h
+ENC_ACTIV:	DS	1	;		equ	028h
+ENC_OLD_A:	DS	1	;		equ	029h
+ENC_R_L:	DS	1	;		equ	02Ah
+PAMP_TMP:	DS	1	;		equ	02Bh
+PRESSED_KEY:DS	1	;		equ	02Ch
+WH8REG:		DS	1	;		equ	02Dh
+TRBL_TMP:	DS	1	;		equ	02Eh
+VOL_TMP:	DS	1	;		equ	02Fh
+TIME_pl1:	DS	1	;		equ	030h
+TMP_PKG:	DS	1	;		equ	031h
+LINE_POS:		DS	1;	equ	032h
+LINE_NUM:DS	1;	equ	033h
 COUNT3:		DS	1	;		equ	034h
 COUNT4:		DS	1	;		equ	035h
 REG036:		DS	1	;		equ	036h
@@ -48,66 +48,21 @@ REG03A:		DS	1	;		equ	03Ah
 REG03B:		DS	1	;		equ	03Bh
 	
 psect		udata_shr
-
 REG070:		DS	1	;		equ	070h
 REG071:		DS	1	;		equ	071h
 REG072:		DS	1	;		equ	072h
 REG073:		DS	1	;		equ	073h
-TMP_STATUS:		DS	1	;		equ	074h
-TMP_PCLATH:		DS	1	;		equ	075h
+TMP_STATUS:	DS	1	;		equ	074h
+TMP_PCLATH:	DS	1	;		equ	075h
 REG076:		DS	1	;		equ	076h
-ENC_B:		DS	1	;		equ	077h
+TMP_ENC_B:	DS	1	;		equ	077h
 REG078:		DS	1	;		equ	078h
 REG079:		DS	1	;		equ	079h
 REG07A:		DS	1	;		equ	07Ah
 REG07B:		DS	1	;		equ	07Bh
 REG07C:		DS	1	;		equ	07Ch
-ENC_A:		DS	1	;		equ	07Dh
+TMP_ENC_A:	DS	1	;		equ	07Dh
 TMP_W:		DS	1	;		equ	07Eh
-	
-;REG020	equ	020h
-;REG021	equ	021h
-;REG022	equ	022h
-;REG023	equ	023h
-;REG024	equ	024h
-;BAL_TMP	equ	025h
-;BASS_TMP	equ	026h
-;CNL_TMP	equ	027h
-;REG028	equ	028h
-;ENC_rot	equ	029h
-;REG02A	equ	02Ah
-;PAMP_TMP	equ	02Bh
-;PRESSED_KEY	equ	02Ch
-;WH8REG	equ	02Dh
-;TRBL_TMP	equ	02Eh
-;VOL_TMP	equ	02Fh
-;TIME_pl1	equ	030h
-;PKG_lcd	equ	031h
-;BIT_POSITION	equ	032h
-;CURSOR_POSITION_LCD	equ	033h
-;COUNT3	equ	034h
-;COUNT4	equ	035h
-;REG036	equ	036h
-;REG037	equ	037h
-;COUNT1	equ	038h
-;COUNT2	equ	039h
-;REG03A	equ	03Ah
-;REG03B	equ	03Bh
-;REG070	equ	070h
-;REG071	equ	071h
-;REG072	equ	072h
-;REG073	equ	073h
-;TMP_STATUS	equ	074h
-;TMP_PCLATH	equ	075h
-;REG076	equ	076h
-;ENC_B	equ	077h
-;REG078	equ	078h
-;REG079	equ	079h
-;REG07A	equ	07Ah
-;REG07B	equ	07Bh
-;REG07C	equ	07Ch
-;ENC_A	equ	07Dh
-;TMP_W	equ	07Eh
 	
 psect	edata
 	DW	S?,t?,a?,n?,d?,SPACE?,b?,y?,0
@@ -143,8 +98,6 @@ HighInterruptVector:
 	movwf		TMP_PCLATH	; значение PCLATH
 	goto		intrpt		; переход на обработку прерывания
 ;*******************************************************************************
-;start:
-;	goto		start1
 L_000B:
 	movlw		0x00		;b'0000 0000',' ',.00
 	movwf		PCLATH
@@ -174,109 +127,32 @@ start:
 	bcf			STATUS,7	;банки 0, 1 при косвенной адресации 
 	movlw		0x20		;адрес первого регистра диапозона
 	movwf		FSR
-	movlw		0x30		;адрес последнего регистра диапозона
+	movlw		0x7F
 	call		clrregs		;очистка диапазона регистров
-;	movlw		0x01		;b'0000 0001',' ',.01
 	movwf		REG03A
 	movwf		REG03B
 	clrf		STATUS
-	call		init_ports		; настойка портов
+	call		init_ports	; настойка портов
 	call		_init_lcd
 	call		fill_CGRAM	; запись своих символов в CGRAM
-	call		disp_off
-;	call		start4		; инициализация LCD
-;*******************************************************************************
-;start2:
-;	movlw		0xFF		;
-;	movwf		COUNT1
-;	movwf		COUNT2
-;pause1:
-;	movlw		0x01		;
-;	subwf		COUNT1,F
-;	movlw		0x00		;
-;	btfss		CARRY
-;	    decf	COUNT2,F
-;	subwf		COUNT2,F
-;;	incf		COUNT1,W
-;	btfsc		ZERO
-;	    incf	COUNT2,W
-;	btfss		ZERO
-;	    goto	pause1
-;	call		init_ports		; настойка портов
-;	call		start4		; инициализация LCD
+	call		clear_LCD
 ;*******************************************************************************
 ; Чтение настроек из EEPROM
 COPYEEDT    MACRO   EADR, FREG
 	movlw		EADR
 	BANKSEL		EEADR
 	movwf		EEADR
-	bsf		EECON1, 0
+	bsf			EECON1, 0
 	movf		EEDATA, W
 	BANKSEL		FREG
 	movwf		FREG
 	ENDM
-	
 	COPYEEDT	0x78, VOL_TMP
 	COPYEEDT	0x79, TRBL_TMP
 	COPYEEDT	0x7A, BASS_TMP
 	COPYEEDT	0x7B, BAL_TMP
 	COPYEEDT	0x7C, PAMP_TMP
 	COPYEEDT	0x7D, CNL_TMP
-	
-;	movlw		0x78		; громкость
-;;	bsf		RP0
-;	BANKSEL		EEADR
-;	movwf		EEADR
-;	bsf		EECON1,0
-;	movf		EEDATA,W
-;;	bcf		RP0
-;	BANKSEL		VOL_TMP
-;	movwf		VOL_TMP
-;	movlw		0x79		; высокие
-;;	bsf		RP0
-;	BANKSEL		EEADR
-;	movwf		EEADR
-;	bsf		EECON1,0
-;	movf		EEDATA,W
-;;	bcf		RP0
-;	BANKSEL		TRBL_TMP
-;	movwf		TRBL_TMP
-;	movlw		0x7A		; низкие
-;;	bsf		RP0
-;	BANKSEL		EEADR
-;	movwf		EEADR
-;	bsf		EECON1,0
-;	movf		EEDATA,W
-;;	bcf		RP0
-;	BANKSEL		BASS_TMP
-;	movwf		BASS_TMP
-;	movlw		0x7B		; балланс
-;;	bsf		RP0
-;	BANKSEL		EEADR
-;	movwf		EEADR
-;	bsf		EECON1,0
-;	movf		EEDATA,W
-;;	bcf		RP0
-;	BANKSEL		BAL_TMP
-;	movwf		BAL_TMP
-;	movlw		0x7C		; предусиление
-;;	bsf		RP0
-;	BANKSEL		EEADR
-;	movwf		EEADR
-;	bsf		EECON1,0
-;	movf		EEDATA,W
-;;	bcf		RP0
-;	BANKSEL		PAMP_TMP
-;	movwf		PAMP_TMP
-;	movlw		0x7D		; канал
-;;	bsf		RP0
-;	BANKSEL		EEADR
-;	movwf		EEADR
-;	bsf		EECON1,0
-;	movf		EEDATA,W
-;;	bcf		RP0
-;	BANKSEL		CNL_TMP
-;	movwf		CNL_TMP
 ;*******************************************************************************
 	call		L_028F
 	call		L_056E
@@ -347,10 +223,10 @@ L_008B:
 	btfss		ZERO
 	    goto	L_008B
 L_0096:
-	decfsz		REG028,W
+	decfsz		ENC_ACTIV,W
 	    goto	L_00A2
-	clrf		REG028
-	decfsz		REG02A,W
+	clrf		ENC_ACTIV
+	decfsz		ENC_R_L,W
 	    goto	L_009D
 	call		encoder_plus
 	goto		L_009E
@@ -521,44 +397,19 @@ L_0124:
 	incf		WH8REG,F
 	call		L_056E
 ;*******************************************************************************
-;EEPROM_SAVE  MACRO	EADR, REG
-;;	bsf		RP0
-;	BANKSEL		EECON1
-;	btfsc		WR
-;	    goto	save_VOL
-;	movlw		0x78		;b'0111 1000','x',.120
-;	movwf		EEADR
-;;	bcf		RP0
-;	BANKSEL		VOL_TMP
-;	movf		VOL_TMP,W
-;;	bsf		RP0
-;	BANKSEL		EEDATA
-;	movwf		EEDATA
-;	bcf		CARRY
-;	btfsc		GIE
-;	    bsf		CARRY
-;	bcf		GIE
-;	bsf		WREN
-;	movlw		0x55		;b'0101 0101','U',.85
-;	movwf		EECON2
-;	movlw		0xAA		;b'1010 1010','Є',.170
-;	movwf		EECON2
-;	bsf		WR
-;	bcf		WREN
-;	btfsc		CARRY
-;	    bsf		GIE
-;*******************************************************************************
-save_VOL:
-;	bsf		RP0
+;Сохранение значений регулируемых параметров в EEPROM
+	goto		save_fregs
+save_freg:
 	BANKSEL		EECON1
 	btfsc		WR
-	    goto	save_VOL
-	movlw		0x78		;b'0111 1000','x',.120
+		goto	save_freg
+	BANKSEL		TMP_PKG
+	movf		TMP_PKG, W
+	BANKSEL		EEADR
 	movwf		EEADR
-;	bcf		RP0
-	BANKSEL		VOL_TMP
-	movf		VOL_TMP,W
-;	bsf		RP0
+	BANKSEL		INDF
+	movf		INDF,W
+	incf		TMP_PKG, F
 	BANKSEL		EEDATA
 	movwf		EEDATA
 	bcf			CARRY
@@ -566,130 +417,26 @@ save_VOL:
 	    bsf		CARRY
 	bcf			GIE
 	bsf			WREN
-	movlw		0x55		;b'0101 0101','U',.85
+	movlw		0x55		; 0101 0101B
 	movwf		EECON2
-	movlw		0xAA		;b'1010 1010','Є',.170
+	movlw		0xAA		; 1010 1010B
 	movwf		EECON2
 	bsf			WR
 	bcf			WREN
 	btfsc		CARRY
 	    bsf		GIE
+	return
+save_fregs:
+	movlw		0x78		; адрес первого байта в EEPROM для сохранения 
+	BANKSEL		TMP_PKG
+	movwf		TMP_PKG
+IRP	FREG, VOL_TMP, TRBL_TMP, BASS_TMP, BAL_TMP, PAMP_TMP, CNL_TMP
+	BANKSEL		FSR
+	movlw		FREG
+	movwf		FSR
+	call		save_freg
+	ENDM
 ;*******************************************************************************
-save_TRBL:
-	btfsc		WR
-		goto	save_TRBL
-	movlw		0x79		;b'0111 1001','y',.121
-	movwf		EEADR
-	bcf			RP0
-	movf		TRBL_TMP,W
-	bsf			RP0
-	movwf		EEDATA
-	bcf			CARRY
-	btfsc		GIE
-		bsf		CARRY
-	bcf			GIE
-	bsf			WREN
-	movlw		0x55		;b'0101 0101','U',.85
-	movwf		EECON2
-	movlw		0xAA		;b'1010 1010','Є',.170
-	movwf		EECON2
-	bsf			WR
-	bcf			WREN
-	btfsc		CARRY
-		bsf		GIE
-;*******************************************************************************
-save_BASS:
-	btfsc		WR
-		goto	save_BASS
-	movlw		0x7A		;b'0111 1010','z',.122
-	movwf		EEADR
-	bcf			RP0
-	movf		BASS_TMP,W
-	bsf			RP0
-	movwf		EEDATA
-	bcf			CARRY
-	btfsc		GIE
-		bsf		CARRY
-	bcf			GIE
-	bsf			WREN
-	movlw		0x55		;b'0101 0101','U',.85
-	movwf		EECON2
-	movlw		0xAA		;b'1010 1010','Є',.170
-	movwf		EECON2
-	bsf			WR
-	bcf			WREN
-	btfsc		CARRY
-		bsf		GIE
-;*******************************************************************************
-save_BAL:
-	btfsc		WR
-		goto	save_BAL
-	movlw		0x7B		;b'0111 1011','{',.123
-	movwf		EEADR
-	bcf			RP0
-	movf		BAL_TMP,W
-	bsf			RP0
-	movwf		EEDATA
-	bcf			CARRY
-	btfsc		GIE
-		bsf		CARRY
-	bcf			GIE
-	bsf			WREN
-	movlw		0x55		;b'0101 0101','U',.85
-	movwf		EECON2
-	movlw		0xAA		;b'1010 1010','Є',.170
-	movwf		EECON2
-	bsf			WR
-	bcf			WREN
-	btfsc		CARRY
-		bsf		GIE
-;*******************************************************************************
-save_PAMP:
-	btfsc		WR
-		goto	save_PAMP
-	movlw		0x7C		;b'0111 1100','|',.124
-	movwf		EEADR
-	bcf			RP0
-	movf		PAMP_TMP,W
-	bsf			RP0
-	movwf		EEDATA
-	bcf			CARRY
-	btfsc		GIE
-		bsf		CARRY
-	bcf			GIE
-	bsf			WREN
-	movlw		0x55		;b'0101 0101','U',.85
-	movwf		EECON2
-	movlw		0xAA		;b'1010 1010','Є',.170
-	movwf		EECON2
-	bsf			WR
-	bcf			WREN
-	btfsc		CARRY
-		bsf		GIE
-;*******************************************************************************
-save_CNL:
-	btfsc		WR
-		goto	save_CNL
-	movlw		0x7D		;b'0111 1101','}',.125
-	movwf		EEADR
-	bcf			RP0
-	movf		CNL_TMP,W
-	bsf			RP0
-	movwf		EEDATA
-	bcf			CARRY
-	btfsc		GIE
-	bsf			CARRY
-	bcf			GIE
-	bsf			WREN
-	movlw		0x55		;b'0101 0101','U',.85
-	movwf		EECON2
-	movlw		0xAA		;b'1010 1010','Є',.170
-	movwf		EECON2
-	bsf			WR
-	bcf			WREN
-	btfss		CARRY
-		goto	L_005E
-	bsf		GIE
 	goto		L_005E
 ;*******************************************************************************
 ;*******************************************************************************
@@ -702,45 +449,42 @@ intrpt:
 	    andlw	0x00		;   запрещены
 	iorlw		0x00		;
 	btfsc		ZERO		; работа энкодера
-	    goto	int_next1	;   не обнаружена
+	    goto	int_tmr		;   не обнаружена
 ;*******************************************************************************
 ; обнаружено прерывание по энкодеру
 	bcf			RBIF		; сброс флага прерывания по энкодеру
 	movlw		0x00		; 0 в аккумулятор
-;	bcf		RP0
-;	bcf		RP1
-	BANKSEL		PORTB
-	btfsc		RB7			; энкодер влево?
-	    movlw	0x01		;   нет, вправо
-	movwf		ENC_B
+	BANKSEL		ENC_PORT	;
+	btfsc		ENC_B		; энкодер вправо?
+	    movlw	0x01		;   нет, влево
+	movwf		TMP_ENC_B	;
 	movlw		0x00		; 0 в аккумулятор
-	btfsc		RB6			; сброшен импульс изменения значения?
+	btfsc		ENC_A		; сброшен импульс изменения значения?
 	    movlw	0x01		;   нет, активен
-	movwf		ENC_A		;
-	xorwf		ENC_rot,W	;
+	movwf		TMP_ENC_A	;
+	xorwf		ENC_OLD_A,W	;
 	btfsc		ZERO		; есть изменение уровня А энкодера?  
-	    goto	L_01CE		;   нет
-	decf		ENC_A,W		; 
+	    goto	enc_state	;   нет
+	decf		TMP_ENC_A,W	; 
 	btfsc		ZERO		; 
-	    goto	L_01CE		;
-	decf		ENC_B,W		;
+	    goto	enc_state	;
+	decf		TMP_ENC_B,W	;
 	btfsc		ZERO		;
-	    goto	L_01CB
-	clrf		REG02A
-	incf		REG02A,F
-	goto		L_01CC
-L_01CB:
-	clrf		REG02A
-L_01CC:
-	clrf		REG028
-	incf		REG028,F
-;*******************************************************************************
-L_01CE:
-	movf		ENC_A,W
-	movwf		ENC_rot
+	    goto	enc_left	;
+	clrf		ENC_R_L		;
+	incf		ENC_R_L,F	;
+	goto		enc_act		;
+enc_left:
+	clrf		ENC_R_L		;
+enc_act:
+	clrf		ENC_ACTIV	;
+	incf		ENC_ACTIV,F	;
+enc_state:
+	movf		TMP_ENC_A,W	; сохранить текущее значение 
+	movwf		ENC_OLD_A	; на выводе А энкодера
 ;*******************************************************************************
 ; Проврка прерывания по TMR0
-int_next1:
+int_tmr:
 	movlw		0x01		;b'0000 0001',' ',.01
 	btfss		T0IF
 	    andlw	0x00		;b'0000 0000',' ',.00
@@ -748,7 +492,7 @@ int_next1:
 	    andlw	0x00		;b'0000 0000',' ',.00
 	iorlw		0x00		;b'0000 0000',' ',.00
 	btfsc		ZERO
-	    goto	L_0224		;
+	    goto	int_end		;
 	bcf		T0IF
 ;*******************************************************************************
 ; Опрос ДУ
@@ -770,9 +514,9 @@ L_01E0:
 	    incf	REG07C,W
 	btfss		ZERO
 	    goto	L_01E0
-	bcf		CARRY
-	bcf		RP0
-	bcf		RP1
+	bcf			CARRY
+	bcf			RP0
+	bcf			RP1
 	btfsc		RA4
 	    bsf		CARRY
 	movlw		0x00		;b'0000 0000',' ',.00
@@ -784,9 +528,9 @@ L_01E0:
 	movwf		REG073
 	movf		REG078,W
 	movwf		REG072
-	bcf		CARRY
-	rlf		REG072,F
-	rlf		REG073,F
+	bcf			CARRY
+	rlf			REG072,F
+	rlf			REG073,F
 	movf		REG070,W
 	addwf		REG072,W
 	movwf		REG078
@@ -834,7 +578,7 @@ L_0219:
 	movwf		TMR0
 ;*******************************************************************************
 ; Восстановление состояния при выходе из прарывания
-L_0224:
+int_end:
 	movf		TMP_PCLATH,W
 	movwf		PCLATH
 	movf		TMP_STATUS,W
@@ -847,15 +591,14 @@ L_0224:
 ; номера каналов
 BYTE_CGRAM  MACRO	BT
 	movlw		BT
-;	movwf		_PKG_LCD
 	call		_print_smb
 	ENDM
 	
 fill_CGRAM:
     
-	bcf		CTRL_LCD, RS_LCD
+	bcf			CTRL_LCD, RS_LCD
 	BYTE_CGRAM	CGRADDR|0x00
-	bsf		CTRL_LCD, RS_LCD
+	bsf			CTRL_LCD, RS_LCD
 IRP	BT, 0x01, 0x03, 0x1D, 0x15, 0x1D, 0x03, 0x01, 0x00 
 	BYTE_CGRAM	BT
 	ENDM
@@ -881,139 +624,18 @@ IRP	BT, 0x1F, 0x11, 0x1D, 0x19, 0x1D, 0x11, 0x1F, 0x00
 	BYTE_CGRAM	BT
 	ENDM
 	return
-
-	
-;;	bcf		RA2
-;	bcf		CTRL_LCD, RS_LCD
-;;	movlw		0x7F		;b'0111 1111','',.127
-;	BYTE_CGRAM	CGRADDR|0x3F
-;;	call		out_w_lcd
-;;	bsf		RA2
-;	bsf		CTRL_LCD, RS_LCD
-;	movlw		0x1F		;b'0001 1111','',.31
-;	call		out_w_lcd
-;	movf		_PKG_LCD
-;	call		_print_smb
-;	movlw		0x11		;b'0001 0001','',.17
-;	call		out_w_lcd
-;	movlw		0x1D		;b'0001 1101','',.29
-;	call		out_w_lcd
-;	movlw		0x19		;b'0001 1001','',.25
-;	call		out_w_lcd
-;	movlw		0x1D		;b'0001 1101','',.29
-;	call		out_w_lcd
-;	movlw		0x11		;b'0001 0001','',.17
-;	call		out_w_lcd
-;	movlw		0x1F		;b'0001 1111','',.31
-;	call		out_w_lcd
-;	movlw		0x00		;b'0000 0000',' ',.00
-;	call		out_w_lcd
-;	movlw		0x1F		;b'0001 1111','',.31
-;	call		out_w_lcd
-;	movlw		0x11		;b'0001 0001','',.17
-;	call		out_w_lcd
-;	movlw		0x17		;b'0001 0111','',.23
-;	call		out_w_lcd
-;	movlw		0x11		;b'0001 0001','',.17
-;	call		out_w_lcd
-;	movlw		0x1D		;b'0001 1101','',.29
-;	call		out_w_lcd
-;	movlw		0x11		;b'0001 0001','',.17
-;	call		out_w_lcd
-;	movlw		0x1F		;b'0001 1111','',.31
-;	call		out_w_lcd
-;	movlw		0x00		;b'0000 0000',' ',.00
-;	call		out_w_lcd
-;	movlw		0x1F		;b'0001 1111','',.31
-;	call		out_w_lcd
-;	movlw		0x11		;b'0001 0001','',.17
-;	call		out_w_lcd
-;	movlw		0x1B		;b'0001 1011','',.27
-;	call		out_w_lcd
-;	movlw		0x1B		;b'0001 1011','',.27
-;	call		out_w_lcd
-;	movlw		0x13		;b'0001 0011','',.19
-;	call		out_w_lcd
-;	movlw		0x1B		;b'0001 1011','',.27
-;	call		out_w_lcd
-;	movlw		0x1F		;b'0001 1111','',.31
-;	call		out_w_lcd
-;	movlw		0x00		;b'0000 0000',' ',.00
-;	call		out_w_lcd
-;*******************************************************************************
-; блоки заполнения шкалы
-;	clrf		BIT_POSITION
-;L_0260:
-;	movlw		0x1E		;b'0001 1110','',.30
-;	call		out_w_lcd
-;	incf		BIT_POSITION,F
-;	movlw		0x08		;b'0000 1000',' ',.08
-;	subwf		BIT_POSITION,W
-;	btfss		CARRY
-;	    goto	L_0260
-;	clrf		BIT_POSITION
-;L_0268:
-;	movlw		0x1C		;b'0001 1100','',.28
-;	call		out_w_lcd
-;	incf		BIT_POSITION,F
-;	movlw		0x08		;b'0000 1000',' ',.08
-;	subwf		BIT_POSITION,W
-;	btfss		CARRY
-;	    goto	L_0268
-;	clrf		BIT_POSITION
-;L_0270:
-;	movlw		0x18		;b'0001 1000','',.24
-;	call		out_w_lcd
-;	incf		BIT_POSITION,F
-;	movlw		0x08		;b'0000 1000',' ',.08
-;	subwf		BIT_POSITION,W
-;	btfss		CARRY
-;	    goto	L_0270
-;	clrf		BIT_POSITION
-;L_0278:
-;	movlw		0x10		;b'0001 0000',' ',.16
-;	call		out_w_lcd
-;	incf		BIT_POSITION,F
-;	movlw		0x08		;b'0000 1000',' ',.08
-;	subwf		BIT_POSITION,W
-;	btfss		CARRY
-;	    goto	L_0278
-;*******************************************************************************
-;  Динамик
-;	movlw		0x01		;b'0000 0001',' ',.01
-;	call		out_w_lcd
-;	movlw		0x03		;b'0000 0011',' ',.03
-;	call		out_w_lcd
-;	movlw		0x1D		;b'0001 1101','',.29
-;	call		out_w_lcd
-;	movlw		0x15		;b'0001 0101','',.21
-;	call		out_w_lcd
-;	movlw		0x1D		;b'0001 1101','',.29
-;	call		out_w_lcd
-;	movlw		0x03		;b'0000 0011',' ',.03
-;	call		out_w_lcd
-;	movlw		0x01		;b'0000 0001',' ',.01
-;	call		out_w_lcd
-;	movlw		0x00		;b'0000 0000',' ',.00
-;	goto		out_w_lcd
-;	return
-	
 ;*******************************************************************************
 L_028F:
 	call		_iic_start_condition
-;	movlw		0x88		;b'1000 1000','€',.136
 	movlw		SLAVEADDR
 	call		_iic_send_byte
-;	bcf		RP0
 	BANKSEL		VOL_TMP
 	movf		VOL_TMP,W
 	sublw		0x40		;b'0100 0000','@',.64
 	call		_iic_send_byte
-;	bcf		RP0
 	BANKSEL		REG03A
 	decfsz		REG03A,W
 	    goto	L_029B
-	;movlw		0x43		;b'0100 0011','C',.67
 	movlw		AP_ASW|AP_ASW_CNL_4
 	goto		icc_msg_end
 L_029B:
@@ -1038,35 +660,30 @@ L_02AB:
 	movf		COUNT4,W
 	addlw		0x80		;b'1000 0000','Ђ',.128
 	call		_iic_send_byte
-;	bcf		RP0	
 	BANKSEL		COUNT3
 	movf		COUNT3,W
 	addlw		0xA0		;b'1010 0000',' ',.160
 	call		_iic_send_byte
-;	bcf		RP0
 	BANKSEL		COUNT4
 	movf		COUNT4,W
 	addlw		0xC0		;b'1100 0000','А',.192
 	call		_iic_send_byte
-;	bcf		RP0
 	BANKSEL		COUNT3
 	movf		COUNT3,W
 	addlw		0xE0		;b'1110 0000','а',.224
 	call		_iic_send_byte
-;	bcf		RP0
 	BANKSEL		CNL_TMP
 	movf		CNL_TMP,W
 	addlw		0x3F		;b'0011 1111','?',.63
-	movwf		CURSOR_POSITION_LCD
+	movwf		LINE_NUM
 	movf		PAMP_TMP,F
 	btfss		ZERO
 		goto	L_02C3
 	movlw		0x18		;b'0001 1000','',.24
-	addwf		CURSOR_POSITION_LCD,F
+	addwf		LINE_NUM,F
 L_02C3:
-	movf		CURSOR_POSITION_LCD,W
+	movf		LINE_NUM,W
 	call		_iic_send_byte
-;	bcf		RP0
 	BANKSEL		BASS_TMP
 	movf		BASS_TMP,W
 	addlw		0x01		;b'0000 0001',' ',.01
@@ -1083,9 +700,6 @@ L_02C3:
 icc_msg_end:
 	call		_iic_send_byte
 	goto		_iic_stop_condition
-;*******************************************************************************
-;encoder_plus:
-;	goto		encoder_plus
 ;*******************************************************************************
 volume_plus:
 	incf		VOL_TMP,F
@@ -1248,49 +862,41 @@ L_0353:
 	incf		REG03A,F
 	clrf		WH8REG
 L_0358:
-	bcf		GIE
+	bcf			GIE
 	movlw		0xFF		;b'1111 1111','я',.255
-	movwf		PKG_lcd
+	movwf		TMP_PKG
 L_035B:
-	decf		PKG_lcd,F
-	movf		PKG_lcd,W
+	decf		TMP_PKG,F
+	movf		TMP_PKG,W
 	xorlw		0xFF		;b'1111 1111','я',.255
 	btfsc		ZERO
 	    goto	L_037E
-	movf		PKG_lcd,W
+	movf		TMP_PKG,W
 	movwf		TIME_pl1
 	btfss		REG03B,0
 	    goto	L_0368
-;	bcf		RP0
-;	bcf		RP1
 	BANKSEL		PORTB
-	bsf		RB4
+	bsf			RB4
 	goto		L_036B
 L_0368:
-;	bcf		RP0
-;	bcf		RP1
 	BANKSEL		PORTB
-	bcf		RB4
+	bcf			RB4
 L_036B:
 	decf		TIME_pl1,F
 	movf		TIME_pl1,W
 	xorlw		0xFF		;b'1111 1111','я',.255
 	btfss		ZERO
 	    goto	L_036B
-	movf		PKG_lcd,W
+	movf		TMP_PKG,W
 	movwf		TIME_pl1
 	btfsc		REG03B,0
 	    goto	L_0378
-;	bcf		RP0
-;	bcf		RP1
 	BANKSEL		PORTB
-	bsf		RB4
+	bsf			RB4
 	goto		L_037B
 L_0378:
-;	bcf		RP0
-;	bcf		RP1
 	BANKSEL		PORTB
-	bcf		RB4
+	bcf			RB4
 L_037B:
 	incfsz		TIME_pl1,F
 	    goto	L_037B
@@ -1321,23 +927,20 @@ L_038C:
 	goto		L_03B2
 L_038F:
 	movlw		0x10		;b'0001 0000',' ',.16
-	movwf		BIT_POSITION
+	movwf		LINE_POS
 	movlw		0x01		;b'0000 0001',' ',.01
 	call		set_DDRAM_ADDR
 	movf		PAMP_TMP,W
 	addlw		0x30		;b'0011 0000','0',.48
-;	call		out_w_lcd
 	call		_print_smb
 	goto		L_03B2
 L_0397:
 	movlw		0x10		;b'0001 0000',' ',.16
-	movwf		BIT_POSITION
+	movwf		LINE_POS
 	movlw		0x01		;b'0000 0001',' ',.01
 	call		set_DDRAM_ADDR
 	movf		CNL_TMP,W
-;	addlw		0x04		;b'0000 0100',' ',.04
-	addlw		0x04
-;	call		out_w_lcd
+	addlw		0x04		;b'0000 0100',' ',.04
 	call		_print_smb
 	goto		L_03B2
 L_039F:
@@ -1363,108 +966,48 @@ L_039F:
 L_03B2:
 	goto		L_028F
 ;*******************************************************************************
-; инициализация LCD
-;start4:
-;	call		_init_lcd
-;	movlw		0x53		;
-;	movwf		COUNT3
-;	movlw		0x05		;
-;	movwf		COUNT4
-;pause2:
-;	movlw		0x01		;
-;	subwf		COUNT3,F
-;	btfss		CARRY
-;	    decf	COUNT4,F
-;	incf		COUNT3,W
-;	btfsc		ZERO
-;	    incf	COUNT4,W
-;	btfss		ZERO
-;	    goto	pause2
-;	bcf		RA2
-;	bcf		RB3
-;	bcf		RB2
-;	bsf		RB1
-;	bcf		RB0		; bsf | bcf ?
-;	bsf		RA3
-;	bcf		RA3
-;	movlw		0x74		;
-;	movwf		COUNT3
-;	movlw		0x01		;
-;	movwf		COUNT4
-;pause3:
-;	movlw		0x01		;
-;	subwf		COUNT3,F
-;	movlw		0x00		;
-;	btfss		CARRY
-;	    decf	COUNT4,F
-;	subwf		COUNT4,F
-;	incf		COUNT3,W
-;	btfsc		ZERO
-;	    incf	COUNT4,W
-;	btfss		ZERO
-;	    goto	pause3
-;	movlw		0x2B		;
-;	call		out_w_lcd
-;	movlw		0x13		;
-;	call		out_w_lcd
-;	movlw		0x0C		;
-;	call		out_w_lcd
-;	movlw		0x04		;
-;	call		out_w_lcd
-;	call		fill_CGRAM	; запись своих символов в CGRAM
-;	goto		disp_off
-;*******************************************************************************
 print_word_from_EEPROM:
-	movwf		BIT_POSITION
+	movwf		LINE_POS
 	clrf		COUNT3
-	clrf		CURSOR_POSITION_LCD
+	clrf		LINE_NUM
 simbol_counter:
-	movf		BIT_POSITION,W
+	movf		LINE_POS,W
 	xorwf		COUNT3,W
 	btfsc		ZERO
 	    goto	end_phrase
-	movf		CURSOR_POSITION_LCD,W
-;	bsf		RP0
+	movf		LINE_NUM,W
 	BANKSEL		EEADR
 	movwf		EEADR
-	bsf		EECON1,0
+	bsf			EECON1,0
 	movf		EEDATA,F
-;	bcf		RP0
 	BANKSEL		COUNT3
 	btfsc		ZERO
 	    incf	COUNT3,F
-;	bcf		RP0
-	BANKSEL		CURSOR_POSITION_LCD
-	incf		CURSOR_POSITION_LCD,F
+	BANKSEL		LINE_NUM
+	incf		LINE_NUM,F
 	goto		simbol_counter
 end_phrase:
 	clrf		COUNT3
 print_word:
-	movf		CURSOR_POSITION_LCD,W
-;	bsf		RP0
+	movf		LINE_NUM,W
 	BANKSEL		EEADR
 	movwf		EEADR
-	bsf		EECON1,0
+	bsf			EECON1,0
 	movf		EEDATA,W
-	BANKSEL		_PKG_LCD
-;	movwf		_PKG_LCD
+;	BANKSEL		_PKG_LCD
 	call		_print_smb
-;	call		out_w_lcd
-	incf		CURSOR_POSITION_LCD,F
-	movf		CURSOR_POSITION_LCD,W
-;	bsf		RP0
+	incf		LINE_NUM,F
+	movf		LINE_NUM,W
 	BANKSEL		EEADR
 	movwf		EEADR
-	bsf		EECON1,0
+	bsf			EECON1,0
 	movf		EEDATA,F
 	btfss		ZERO
 	    goto	end_phrase_
 	movlw		0x10		;b'0001 0000',' ',.16
-;	bcf		RP0
 	BANKSEL		COUNT3
 	movwf		COUNT3
 end_phrase_:
-;	bcf		RP0
 	BANKSEL		COUNT3
 	incf		COUNT3,F
 	movlw		0x10		;b'0001 0000',' ',.16
@@ -1474,140 +1017,93 @@ end_phrase_:
 	goto		print_word
 ;*******************************************************************************
 space_line_LCD:
-	movwf		BIT_POSITION
-	decfsz		BIT_POSITION,W
+	movwf		LINE_POS
+	decfsz		LINE_POS,W
 	    goto	L_041E
-;	bcf		RA2
-	bcf		CTRL_LCD, RS_LCD
-;	movlw		0x80		;b'1000 0000','Ђ',.128
+	bcf			CTRL_LCD, RS_LCD
 	movlw		DDRADDR|0x00
-;	call		out_w_lcd
-;	movwf		_PKG_LCD
 	call		_print_smb
-;	bsf		RA2
-	bsf		CTRL_LCD, RS_LCD    
-	clrf		CURSOR_POSITION_LCD
+	bsf			CTRL_LCD, RS_LCD    
+	clrf		LINE_NUM
 space_to_position:
-;	movlw		0x20		;b'0010 0000',' ',.32
 	movlw		SPACE?
-;	call		out_w_lcd
-;	movwf		_PKG_LCD
 	call		_print_smb
-	incf		CURSOR_POSITION_LCD,F
+	incf		LINE_NUM,F
 	movlw		0x10		;b'0001 0000',' ',.16
-	subwf		CURSOR_POSITION_LCD,W
+	subwf		LINE_NUM,W
 	btfss		CARRY
 	    goto	space_to_position
-;	bcf		RA2
-	bcf		CTRL_LCD, RS_LCD
-;	movlw		0x80		;b'1000 0000','Ђ',.128
+	bcf			CTRL_LCD, RS_LCD
 	movlw		DDRADDR|0x00
-;	call		out_w_lcd
-;	movwf		_PKG_LCD
 	call		_print_smb
-;	bsf		RA2
-	bsf		CTRL_LCD, RS_LCD
+	bsf			CTRL_LCD, RS_LCD
 L_041E:
-	movf		BIT_POSITION,W
+	movf		LINE_POS,W
 	xorlw		0x02		;b'0000 0010',' ',.02
 	btfss		ZERO
 	    return	
-;	bcf		RA2
-	bcf		CTRL_LCD, RS_LCD
-;	movlw		0xC0		;b'1100 0000','А',.192
+	bcf			CTRL_LCD, RS_LCD
 	movlw		DDRADDR|0x40
-;	call		out_w_lcd
-;	movwf		_PKG_LCD
 	call		_print_smb
-;	bsf		RA2
-	bsf		CTRL_LCD, RS_LCD
-	clrf		CURSOR_POSITION_LCD
+	bsf			CTRL_LCD, RS_LCD
+	clrf		LINE_NUM
 sp_to_position:
-;	movlw		0x20		;b'0010 0000',' ',.32
 	movlw		SPACE?
-;	call		out_w_lcd
-;	movwf		_PKG_LCD
 	call		_print_smb
-	incf		CURSOR_POSITION_LCD,F
+	incf		LINE_NUM,F
 	movlw		0x10		;b'0001 0000',' ',.16
-	subwf		CURSOR_POSITION_LCD,W
+	subwf		LINE_NUM,W
 	btfss		CARRY
 	    goto	sp_to_position
-;	bcf		RA2
-	bcf		CTRL_LCD, RS_LCD
-;	movlw		0xC0		;b'1100 0000','А',.192
+	bcf			CTRL_LCD, RS_LCD
 	movlw		DDRADDR|0x40
-;	call		out_w_lcd
-;	movwf		_PKG_LCD
 	call		_print_smb
-;	bsf		RA2
-	bsf		CTRL_LCD, RS_LCD
+	bsf			CTRL_LCD, RS_LCD
 	return
 ;*******************************************************************************
 up_line_LCD:
-	movwf		CURSOR_POSITION_LCD
+	movwf		LINE_NUM
 	movlw		0x30		;b'0011 0000','0',.48
 	movwf		COUNT3
-	movwf		BIT_POSITION
+	movwf		LINE_POS
 L_0437:
 	movlw		0x0A		;b'0000 1010',' ',.10
-	subwf		CURSOR_POSITION_LCD,W
+	subwf		LINE_NUM,W
 	btfss		CARRY
 	    goto	L_043F
 	incf		COUNT3,F
 	movlw		0xF6		;b'1111 0110','ц',.246
-	addwf		CURSOR_POSITION_LCD,F
+	addwf		LINE_NUM,F
 	goto		L_0437
 L_043F:
-	movf		CURSOR_POSITION_LCD,W
-	addwf		BIT_POSITION,F
-;	bcf		RA2
+	movf		LINE_NUM,W
+	addwf		LINE_POS,F
 	bcf			CTRL_LCD, RS_LCD
-;	movlw		0x8B		;b'1000 1011','‹',.139
 	movlw		DDRADDR|0x0B
-;	call		out_w_lcd
-;	movwf		_PKG_LCD
 	call		_print_smb
-;	bsf		RA2
 	bsf			CTRL_LCD, RS_LCD
 	movf		COUNT3,W
 	xorlw		0x30		;b'0011 0000','0',.48
 	btfss		ZERO
 		goto	L_044B
-;	movlw		0x20		;b'0010 0000',' ',.32
 	movlw		SPACE?
 	movwf		COUNT3
 L_044B:
 	movf		COUNT3,W
-;	movwf		_PKG_LCD
-;	call		out_w_lcd
 	call		_print_smb
-	movf		BIT_POSITION,W
-;	movwf		_PKG_LCD
-;	call		out_w_lcd
+	movf		LINE_POS,W
 	call		_print_smb
-;	movlw		0x20		;b'0010 0000',' ',.32
 	movlw		SPACE?
-;	movwf		_PKG_LCD
-;	call		out_w_lcd
 	call		_print_smb
 	movlw		0x00		;b'0000 0000',' ',.00
-;	movwf		_PKG_LCD
-;	call		out_w_lcd
 	call		_print_smb
 	decfsz		REG03A,W
 	    goto	L_0457
-;	movlw		0x78		;b'0111 1000','x',.120
 	movlw		x?
-;	movwf		_PKG_LCD
-;	goto		out_w_lcd
 	goto		_print_smb
 L_0457:
 	movf		CNL_TMP,W
-;	addlw		0x04		;b'0000 0100',' ',.04
-	addlw		0x04
-;	movwf		_PKG_LCD
-;	goto		out_w_lcd
+	addlw		0x04		;b'0000 0100',' ',.04
 	goto		_print_smb
 ;*******************************************************************************
 balance_scale:
@@ -1626,26 +1122,19 @@ L_045C:
 	btfsc		CARRY
 		goto	L_046A
 	movlw		0xFF		;b'1111 1111','я',.255
-;	call		out_w_lcd
-;	movwf		_PKG_LCD
 	call		_print_smb
 	goto		L_045C
 L_046A:
-;	movlw		0x3E		;b'0011 1110','>',.62
 	movlw		RIGHT?
 	call		_print_smb
-;	call		out_w_lcd
-;	movwf		_PKG_LCD
-;	movlw		0x3C		;b'0011 1100','<',.60
 	movlw		LEFT?
-;	call		out_w_lcd
 	call		_print_smb
 	movf		REG036,W
 	movwf		COUNT4
-	bcf		CARRY
-	rrf		COUNT4,F
-	bcf		CARRY
-	rrf		COUNT4,F
+	bcf			CARRY
+	rrf			COUNT4,F
+	bcf			CARRY
+	rrf			COUNT4,F
 	movf		COUNT4,W
 	movwf		REG037
 L_0476:
@@ -1654,7 +1143,6 @@ L_0476:
 	btfsc		CARRY
 	goto		L_047E
 	movlw		0xFF		;b'1111 1111','я',.255
-;	call		out_w_lcd
 	call		_print_smb
 	incf		REG037,F
 	goto		L_0476
@@ -1662,93 +1150,37 @@ L_047E:
 	movf		REG036,W
 	goto		up_line_LCD
 ;*******************************************************************************
-;_iic_send_byte:
-;	movwf		PKG_lcd
-;	movlw		0x08		;b'0000 1000',' ',.08
-;	movwf		BIT_POSITION
-;bit_to_SP:
-;	movf		BIT_POSITION,F
-;	btfsc		ZERO
-;	    goto	stop_bit
-;	decf		BIT_POSITION,F
-;	movf		PKG_lcd,W
-;	movwf		TIME_pl1
-;	incf		BIT_POSITION,W
-;	goto		L_048D
-;next_bit:
-;	bcf		CARRY
-;	rrf		TIME_pl1,F
-;L_048D:
-;	addlw		0xFF		;
-;	btfss		ZERO		;
-;	    goto	next_bit
-;	btfss		TIME_pl1,0	; передаваемый бит единица?
-;	    goto	L_0496		; нет
-;;	bcf		RP0
-;;	bcf		RP1
-;	BANKSEL		PORTA
-;	bsf		RA6		; up SDA
-;	goto		p_SCL
-;L_0496:
-;;	bcf		RP0
-;;	bcf		RP1
-;	BANKSEL		PORTA
-;	bcf		RA6		; down SDA
-;p_SCL:
-;	call		_iic_pulse_SCL
-;	goto		bit_to_SP
-;;*******************************************************************************
-;stop_bit:
-;;	bsf		RP0
-;	BANKSEL		TRISA
-;	bsf		TRISA6
-;	call		_short_pause
-;	call		_iic_pulse_SCL
-;;	bsf		RP0
-;	BANKSEL		TRISA
-;	bcf		TRISA6
-;	return
-;*******************************************************************************
 check_KEY:
-;	bcf		RP0
 	BANKSEL		PRESSED_KEY
 	clrf		PRESSED_KEY
-;	bsf		RP0
 	BANKSEL		TRISB
-	bsf		TRISB0
-;	bcf		RP0
+	bsf			TRISB0
 	BANKSEL		PORTB
 	btfsc		RB0
 	    goto	check_NEXT
 	clrf		PRESSED_KEY
 	incf		PRESSED_KEY,F
 check_NEXT:
-;	bsf		RP0
 	BANKSEL		TRISB
-	bcf		TRISB0
-	bsf		TRISB1
-;	bcf		RP0
+	bcf			TRISB0
+	bsf			TRISB1
 	BANKSEL		PORTB
 	btfsc		RB1
 	    goto	check_PREV
 	movlw		0x02		;b'0000 0010',' ',.02
 	movwf		PRESSED_KEY
 check_PREV:
-;	bsf		RP0
 	BANKSEL		TRISB
-	bcf		TRISB1
-	bsf		TRISB2
-;	bcf		RP0
+	bcf			TRISB1
+	bsf			TRISB2
 	BANKSEL		PORTB
 	btfsc		RB2
 	    goto	check_ON_OFF
 	movlw		0x03		;b'0000 0011',' ',.03
 	movwf		PRESSED_KEY
 check_ON_OFF:
-;	bsf		RP0
 	BANKSEL		TRISB
-	bcf		TRISB2
-;	bcf		RP0
+	bcf			TRISB2
 	BANKSEL		PORTB
 	btfsc		RB5
 	    return
@@ -1768,7 +1200,6 @@ L_04C5:
 	btfsc		CARRY
 	    goto	L_04D0
 	movlw		0xFF		;b'1111 1111','я',.255
-;	call		out_w_lcd
 	call		_print_smb
 	incf		REG037,F
 	goto		L_04C5
@@ -1788,20 +1219,19 @@ L_04D0:
 	movwf		REG037
 L_04DD:
 	movf		REG037,W
-;	call		out_w_lcd
 	call		_print_smb
 	movf		REG036,W
 	goto		up_line_LCD
 ;*******************************************************************************
 L_04E1:
-	movwf		PKG_lcd
-	clrf		CURSOR_POSITION_LCD
+	movwf		TMP_PKG
+	clrf		LINE_NUM
 	movf		TIME_pl1,W
 	btfsc		ZERO
 		goto	L_04FA
-	clrf		BIT_POSITION
+	clrf		LINE_POS
 L_04E7:
-	incf		BIT_POSITION,F
+	incf		LINE_POS,F
 	btfsc		TIME_pl1,7
 		goto	L_04ED
 	bcf			CARRY
@@ -1809,171 +1239,115 @@ L_04E7:
 	goto		L_04E7
 L_04ED:
 	bcf			CARRY
-	rlf			CURSOR_POSITION_LCD,F
+	rlf			LINE_NUM,F
 	movf		TIME_pl1,W
-	subwf		PKG_lcd,W
+	subwf		TMP_PKG,W
 	btfss		CARRY
 		goto	L_04F7
 	movf		TIME_pl1,W
-	subwf		PKG_lcd,F
-	bsf			CURSOR_POSITION_LCD,0
+	subwf		TMP_PKG,F
+	bsf			LINE_NUM,0
 	bcf			CARRY
 L_04F7:
 	rrf			TIME_pl1,F
-	decfsz		BIT_POSITION,F
-		goto		L_04ED
+	decfsz		LINE_POS,F
+		goto	L_04ED
 L_04FA:
-	movf		CURSOR_POSITION_LCD,W
+	movf		LINE_NUM,W
 	return
 ;*******************************************************************************
 ; настройка портов
 init_ports:
 	clrf		INTCON
 	movlw		0x10		;b'0001 0000',' ',.16
-;	bsf		RP0
 	BANKSEL		TRISA
 	movwf		TRISA
 	movlw		0xE0		;b'1110 0000','а',.224
 	movwf		TRISB
-	
 	bsf			OSCF		; частота внутреннего генератора 4 MHz
-	
 	movlw		0x07		;b'0000 0111',' ',.07
-;	bcf		RP0
 	BANKSEL		CMCON
 	movwf		CMCON		; отключить компараторы
 	clrf		PORTA
 	clrf		PORTB
-;	bsf		RP0
 	BANKSEL		OPTION_REG
-	bcf		nRBPU		; включить подтягивающие резисторы
-	bsf		PEIE		; прерывания от переферии разрешить
-	bsf		T0CS		; тактовый сигнал внешний (от IR)
-	bsf		T0SE		; приращение по заднему фронту
-	bsf		PSA		; предделитель перед WDT
+	bcf			nRBPU		; включить подтягивающие резисторы
+	bsf			PEIE		; прерывания от переферии разрешить
+	bsf			T0CS		; тактовый сигнал внешний (от IR)
+	bsf			T0SE		; приращение по заднему фронту
+	bsf			PSA			; предделитель перед WDT
 	movlw		0xFF		;b'1111 1111','я',.255
-;	bcf		RP0
 	BANKSEL		TMR0
 	movwf		TMR0
-	bsf		T0IE		; разрешить прерывания пр TMR0
-	bcf		T0IF		; сбросить флаг прерывания по TMR0
-	bsf		RBIE		; разрешить прерывания по RB7:RB4
-	bcf		RBIF		; сбросить флаг прерывания по RB7:RB4
-	bsf		GIE		; разрешить все указанные прерывания
+	bsf			T0IE		; разрешить прерывания пр TMR0
+	bcf			T0IF		; сбросить флаг прерывания по TMR0
+	bsf			RBIE		; разрешить прерывания по RB7:RB4
+	bcf			RBIF		; сбросить флаг прерывания по RB7:RB4
+	bsf			GIE			; разрешить все указанные прерывания
 	return
 ;*******************************************************************************
-; Вывод символа или команды из аккумулятора в LCD
-;out_w_lcd:
-;	BANKSEL		_PKG_LCD
-;	movwf		_PKG_LCD
-;	call		_print_smb
-;	return
-    
-;	bcf		RP0
-;	BANKSEL		PKG_lcd
-;	movwf		PKG_lcd
-;	movlw		0x0A		;
-;	movwf		TIME_pl1
-;	movlw		0xF0		;
-;	andwf		PORTB,F
-;	swapf		PKG_lcd,W
-;	andlw		0x0F		;
-;	addwf		PORTB,F
-;	bsf		RA3
-;	bcf		RA3
-;	movlw		0xF0		;
-;	andwf		PORTB,F
-;	movf		PKG_lcd,W
-;	andlw		0x0F		;
-;	addwf		PORTB,F
-;	bsf		RA3
-;	bcf		RA3
-;*******************************************************************************
-; короткая пауза заданная в TIME_pl1
-;pause_l1:
-;	decf		TIME_pl1,F
-;	movf		TIME_pl1,W
-;	xorlw		0xFF		;
-;	btfsc		ZERO
-;		return
-;	goto		pause_l1
-;*******************************************************************************
-disp_off:
-	movlw		0x96		;b'1001 0110','–',.150
-	movwf		BIT_POSITION
-	clrf		CURSOR_POSITION_LCD
-;	bcf		RA2
+clear_LCD:
+;	movlw		0x96		;b'1001 0110','–',.150
+;	movwf		LINE_POS
+;	clrf		LINE_NUM
 	bcf			CTRL_LCD, RS_LCD
-;	movlw		0x01		; очистить дисплей
 	movlw		CLRDISP
-;	movwf		_PKG_LCD
-;	call		out_w_lcd
 	call		_print_smb	;
-;	call		p1562mks	;
-L_0534:
-	movlw		0x01		;b'0000 0001',' ',.01
-	subwf		BIT_POSITION,F
-	movlw		0x00		;b'0000 0000',' ',.00
-	btfss		CARRY
-	    decf	CURSOR_POSITION_LCD,F
-	subwf		CURSOR_POSITION_LCD,F
-	incf		BIT_POSITION,W
-	btfsc		ZERO
-	    incf	CURSOR_POSITION_LCD,W
-	btfss		ZERO
-	    goto	L_0534
-;	bcf		RA2
-	bcf			CTRL_LCD, RS_LCD
-;	movlw		0x80		;
+;	bsf			CTRL_LCD, RS_LCD
+	call		p1562mks	;
+;L_0534:
+;	movlw		0x01		;b'0000 0001',' ',.01
+;	subwf		LINE_POS,F
+;	movlw		0x00		;b'0000 0000',' ',.00
+;	btfss		CARRY
+;	    decf	LINE_NUM,F
+;	subwf		LINE_NUM,F
+;	incf		LINE_POS,W
+;	btfsc		ZERO
+;	    incf	LINE_NUM,W
+;	btfss		ZERO
+;	    goto	L_0534
+;	bcf			CTRL_LCD, RS_LCD
 	movlw		DDRADDR|0x00
-;	movwf		_PKG_LCD
-;	call		out_w_lcd
 	call		_print_smb
-;	bsf		RA2		; режим вывода символов
 	bsf			CTRL_LCD, RS_LCD
 	return
 ;*******************************************************************************
 set_DDRAM_ADDR:
-	movwf		CURSOR_POSITION_LCD
-;	bcf		RA2
+	movwf		LINE_NUM
 	bcf			CTRL_LCD, RS_LCD
-	decfsz		CURSOR_POSITION_LCD,W
+	decfsz		LINE_NUM,W
 	    goto	line_2_LCD
-	movf		BIT_POSITION,W
-	addlw		0x7F		;b'0111 1111','',.127
-;	call		out_w_lcd
-;	movwf		_PKG_LCD
+	decf		LINE_POS,W
+	xorlw		DDRADDR|LCD_LINE_ONE;
 	call		_print_smb
 line_2_LCD:
-	movf		CURSOR_POSITION_LCD,W
+	movf		LINE_NUM,W
 	xorlw		0x02		;b'0000 0010',' ',.02
 	btfss		ZERO
 	    goto	L_0552
-	movf		BIT_POSITION,W
-	addlw		0xBF		;b'1011 1111','ї',.191
-;	call		out_w_lcd
-;	movwf		_PKG_LCD
+	decf		LINE_POS,W
+	xorlw		DDRADDR|LCD_LINE_TWO;
 	call		_print_smb
 L_0552:
-;	bsf		RA2
 	bsf			CTRL_LCD, RS_LCD
 	return
 ;*******************************************************************************
 L_0554:
-	movwf		BIT_POSITION
-	clrf		PKG_lcd
+	movwf		LINE_POS
+	clrf		TMP_PKG
 L_0556:
 	movf		TIME_pl1,W
-	btfsc		BIT_POSITION,0
-	    addwf	PKG_lcd,F
+	btfsc		LINE_POS,0
+	    addwf	TMP_PKG,F
 	bcf			CARRY
 	rlf			TIME_pl1,F
 	bcf			CARRY
-	rrf			BIT_POSITION,F
-	movf		BIT_POSITION,F
+	rrf			LINE_POS,F
+	movf		LINE_POS,F
 	btfss		ZERO
 	    goto	L_0556
-	movf		PKG_lcd,W
+	movf		TMP_PKG,W
 	return
 ;*******************************************************************************
 fill_skale:
@@ -1985,8 +1359,6 @@ L_0564:
 	btfsc		CARRY
 		goto	L_056C
 	movlw		0xFF		;b'1111 1111','я',.255
-;	call		out_w_lcd
-;	movwf		_PKG_LCD
 	call		_print_smb
 	incf		REG036,F
 	goto		L_0564
@@ -1995,12 +1367,12 @@ L_056C:
 	goto		up_line_LCD
 ;*******************************************************************************
 L_056E:
-	call		disp_off
+	call		clear_LCD
 	movf		WH8REG,F
 	btfss		ZERO
 		goto	L_0576
 	movlw		0x05		;b'0000 0101',' ',.05
-	movwf		BIT_POSITION
+	movwf		LINE_POS
 	movlw		0x01		;b'0000 0001',' ',.01
 	call		set_DDRAM_ADDR
 L_0576:
@@ -2008,9 +1380,9 @@ L_0576:
 	call		print_word_from_EEPROM
 	goto		L_0380
 ;*******************************************************************************
-clrregs:				;очиситка регистов
-	clrwdt				;сброс сторожевого таймера
-clrrr:					;очистка диапозона регистпров
+clrregs:					;очиситка регистов
+	clrwdt					;сброс сторожевого таймера
+clrrr:						;очистка диапозона регистпров
 	clrf		INDF
 	incf		FSR,F
 	xorwf		FSR,W
@@ -2029,15 +1401,6 @@ wheel_8:
 	incf		WH8REG,F
 	return
 ;*******************************************************************************
-;_iic_start_condition:
-;	bsf		RA6		; SDA up
-;	bsf		RA7		; SCL up
-;	call		_short_pause
-;	bcf		RA6		; SDA down
-;	call		_short_pause
-;	bcf		RA7		; SCL down
-;	return
-;*******************************************************************************
 invertor:
 	decfsz		REG03A,W
 	    goto	not_ZERO
@@ -2048,23 +1411,6 @@ not_ZERO:
 	incf		REG03A,F
 	return
 ;*******************************************************************************
-;_iic_pulse_SCL:
-;	call		_short_pause
-;;	bcf		RP0
-;	BANKSEL		PORTA
-;	bsf		RA7
-;	call		_short_pause
-;	bcf		RA7
-;	return
-;*******************************************************************************
-;_iic_stop_condition:
-;;	bcf		RP0
-;	BANKSEL		PORTA
-;	bsf		RA7		    ; up SCL
-;	call		_short_pause
-;	bsf		RA6		    ; up SDA
-;	return
-;*******************************************************************************
 L_05AC:
 	decfsz		WH8REG,F
 		return	
@@ -2072,12 +1418,4 @@ L_05AC:
 	movwf		WH8REG
 	return
 ;*******************************************************************************
-;_short_pause:
-;	nop		
-;	nop		
-;	return
-;*******************************************************************************
 	end	; directive 'end of program'
-
-
-
