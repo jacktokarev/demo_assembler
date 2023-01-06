@@ -31,21 +31,21 @@ ENC_OLD_A:	DS	1	;		equ	029h
 ENC_R_L:	DS	1	;		equ	02Ah
 PAMP_TMP:	DS	1	;		equ	02Bh
 PRESSED_KEY:DS	1	;		equ	02Ch
-WH8REG:		DS	1	;		equ	02Dh
+MODE_NUM:		DS	1	;		equ	02Dh
 TRBL_TMP:	DS	1	;		equ	02Eh
 VOL_TMP:	DS	1	;		equ	02Fh
 TIME_pl1:	DS	1	;		equ	030h
 TMP_PKG:	DS	1	;		equ	031h
-LINE_POS:		DS	1;	equ	032h
-LINE_NUM:DS	1;	equ	033h
+LINE_POS:	DS	1	;		equ	032h
+LINE_NUM:	DS	1	;		equ	033h
 COUNT3:		DS	1	;		equ	034h
 COUNT4:		DS	1	;		equ	035h
 REG036:		DS	1	;		equ	036h
 REG037:		DS	1	;		equ	037h
 COUNT1:		DS	1	;		equ	038h
 COUNT2:		DS	1	;		equ	039h
-REG03A:		DS	1	;		equ	03Ah
-REG03B:		DS	1	;		equ	03Bh
+MUTE_REG:	DS	1	;		equ	03Ah
+ON_OFF:		DS	1	;		equ	03Bh
 	
 psect		udata_shr
 REG070:		DS	1	;		equ	070h
@@ -98,7 +98,7 @@ HighInterruptVector:
 	movwf		TMP_PCLATH	; значение PCLATH
 	goto		intrpt		; переход на обработку прерывания
 ;*******************************************************************************
-L_000B:
+get_freq_shcale:
 	movlw		0x00		;b'0000 0000',' ',.00
 	movwf		PCLATH
 	movf		FSR,W
@@ -129,8 +129,8 @@ start:
 	movwf		FSR
 	movlw		0x7F
 	call		clrregs		;очистка диапазона регистров
-	movwf		REG03A
-	movwf		REG03B
+	movwf		MUTE_REG
+	movwf		ON_OFF
 	clrf		STATUS
 	call		init_ports	; настойка портов
 	call		_init_lcd
@@ -154,7 +154,7 @@ COPYEEDT    MACRO   EADR, FREG
 	COPYEEDT	0x7C, PAMP_TMP
 	COPYEEDT	0x7D, CNL_TMP
 ;*******************************************************************************
-	call		L_028F
+	call		iic_msg
 	call		L_056E
 L_005E:
 	call		check_KEY
@@ -173,7 +173,7 @@ L_0067:
 	call		check_KEY
 	goto		L_0067
 L_006C:
-	movf		REG03B,F
+	movf		ON_OFF,F
 	btfsc		ZERO
 	    goto	L_007A
 	goto		L_0084
@@ -251,7 +251,7 @@ L_00A2:
 	    goto	L_00AE
 	call		on_of_LED
 L_00AE:
-	movf		REG03B,F
+	movf		ON_OFF,F
 	btfsc		ZERO
 	    goto	L_00DC
 	goto		L_0104
@@ -295,8 +295,8 @@ L_00CE:
 	call		encoder_plus
 	goto		L_0104
 L_00D0:
-	clrf		WH8REG
-	incf		WH8REG,F
+	clrf		MODE_NUM
+	incf		MODE_NUM,F
 	goto		L_0104
 L_00D3:
 	movlw		0x02		;b'0000 0010',' ',.02
@@ -310,7 +310,7 @@ L_00D7:
 L_00D9:
 	movlw		0x05		;b'0000 0101',' ',.05
 L_00DA:
-	movwf		WH8REG
+	movwf		MODE_NUM
 	goto		L_0104
 L_00DC:
 	movf		REG024,W
@@ -379,7 +379,7 @@ L_0117:
 	iorwf		REG022,W
 	btfsc		ZERO
 	    goto	L_0124
-	movf		WH8REG,W
+	movf		MODE_NUM,W
 	btfsc		ZERO
 	    goto	L_0124
 	movlw		0x01		;b'0000 0001',' ',.01
@@ -393,8 +393,8 @@ L_0124:
 	iorwf		REG023,W
 	btfss		ZERO
 	    goto	L_005E
-	clrf		WH8REG
-	incf		WH8REG,F
+	clrf		MODE_NUM
+	incf		MODE_NUM,F
 	call		L_056E
 ;*******************************************************************************
 ;Сохранение значений регулируемых параметров в EEPROM
@@ -625,78 +625,80 @@ IRP	BT, 0x1F, 0x11, 0x1D, 0x19, 0x1D, 0x11, 0x1F, 0x00
 	ENDM
 	return
 ;*******************************************************************************
-L_028F:
+iic_msg:
 	call		_iic_start_condition
 	movlw		SLAVEADDR
 	call		_iic_send_byte
 	BANKSEL		VOL_TMP
-	movf		VOL_TMP,W
-	sublw		0x40		;b'0100 0000','@',.64
+;	movf		VOL_TMP,W
+;	sublw		0x40		;b'0100 0000','@',.64
+	decf		VOL_TMP,W
+	sublw		AP_VOL_70|AP_VOL_8c75
 	call		_iic_send_byte
-	BANKSEL		REG03A
-	decfsz		REG03A,W
-	    goto	L_029B
+	BANKSEL		MUTE_REG
+	decfsz		MUTE_REG,W
+	    goto	mute_off
 	movlw		AP_ASW|AP_ASW_CNL_4
 	goto		icc_msg_end
-L_029B:
+mute_off:
 	clrf		COUNT3
-	movlw		0x21		;b'0010 0001','!',.33
+	movlw		0x21
 	subwf		BAL_TMP,W
 	btfsc		CARRY
-	    goto	L_02A3
+	    goto	bal_in_right
 	movf		BAL_TMP,W
-	sublw		0x20		;b'0010 0000',' ',.32
+	sublw		0x20
 	movwf		COUNT3
-L_02A3:
+bal_in_right:
 	clrf		COUNT4
-	movlw		0x21		;b'0010 0001','!',.33
+	movlw		0x21
 	subwf		BAL_TMP,W
 	btfss		CARRY
-		goto	L_02AB
+		goto	send_bal
 	movf		BAL_TMP,W
-	addlw		0xDF		;b'1101 1111','Я',.223
+	addlw		not 0x20
 	movwf		COUNT4
-L_02AB:
+send_bal:
 	movf		COUNT4,W
-	addlw		0x80		;b'1000 0000','Ђ',.128
+	addlw		AP_ATT_LF
 	call		_iic_send_byte
 	BANKSEL		COUNT3
 	movf		COUNT3,W
-	addlw		0xA0		;b'1010 0000',' ',.160
+	addlw		AP_ATT_RF
 	call		_iic_send_byte
 	BANKSEL		COUNT4
 	movf		COUNT4,W
-	addlw		0xC0		;b'1100 0000','А',.192
+	addlw		AP_ATT_LR
 	call		_iic_send_byte
 	BANKSEL		COUNT3
 	movf		COUNT3,W
-	addlw		0xE0		;b'1110 0000','а',.224
+	addlw		AP_ATT_RR
 	call		_iic_send_byte
 	BANKSEL		CNL_TMP
-	movf		CNL_TMP,W
-	addlw		0x3F		;b'0011 1111','?',.63
+	decf		CNL_TMP,W
+	addlw		AP_ASW
 	movwf		LINE_NUM
 	movf		PAMP_TMP,F
 	btfss		ZERO
-		goto	L_02C3
-	movlw		0x18		;b'0001 1000','',.24
+		goto	gain_on		; ! предусиление включается на полную (+11,25 dB)
+	movlw		AP_ASW_G_0
 	addwf		LINE_NUM,F
-L_02C3:
+gain_on:
 	movf		LINE_NUM,W
 	call		_iic_send_byte
 	BANKSEL		BASS_TMP
 	movf		BASS_TMP,W
-	addlw		0x01		;b'0000 0001',' ',.01
+	addlw		0x01
 	movwf		FSR
-	call		L_000B
-	addlw		0x60		;b'0110 0000','`',.96
+	call		get_freq_shcale
+	addlw		AP_FRQ|AP_FRQ_B
 	call		_iic_send_byte
-	bcf		RP0
+	BANKSEL		TRBL_TMP
 	movf		TRBL_TMP,W
-	addlw		0x01		;b'0000 0001',' ',.01
+	addlw		0x01
 	movwf		FSR
-	call		L_000B
-	addlw		0x70		;b'0111 0000','p',.112
+	call		get_freq_shcale
+	addlw		AP_FRQ|AP_FRQ_T
 icc_msg_end:
 	call		_iic_send_byte
 	goto		_iic_stop_condition
@@ -760,7 +762,7 @@ channel_wheel:
 	return
 ;*******************************************************************************
 encoder_plus:
-	movf		WH8REG,W
+	movf		MODE_NUM,W
 	xorlw		0x01		;b'0000 0001',' ',.01
 	btfsc		ZERO
 	    goto	volume_plus
@@ -826,7 +828,7 @@ chanel_wheel_left:
 	return
 ;*******************************************************************************
 encoder_minus:
-	movf		WH8REG,W
+	movf		MODE_NUM,W
 	xorlw		0x01		;b'0000 0001',' ',.01
 	btfsc		ZERO
 	    goto	volume_minus
@@ -848,19 +850,19 @@ encoder_minus:
 	goto		chanel_wheel_left
 ;*******************************************************************************
 on_of_LED:
-	decfsz		REG03B,W
-	    goto	L_0353
-	clrf		REG03B
-	clrf		REG03A
-	clrf		WH8REG
-	incf		WH8REG,F
+	decfsz		ON_OFF,W
+	    goto	on_dev
+	clrf		ON_OFF
+	clrf		MUTE_REG
+	clrf		MODE_NUM
+	incf		MODE_NUM,F
 	goto		L_0358
-L_0353:
-	clrf		REG03B
-	incf		REG03B,F
-	clrf		REG03A
-	incf		REG03A,F
-	clrf		WH8REG
+on_dev:
+	clrf		ON_OFF
+	incf		ON_OFF,F
+	clrf		MUTE_REG
+	incf		MUTE_REG,F
+	clrf		MODE_NUM
 L_0358:
 	bcf			GIE
 	movlw		0xFF		;b'1111 1111','я',.255
@@ -873,7 +875,7 @@ L_035B:
 	    goto	L_037E
 	movf		TMP_PKG,W
 	movwf		TIME_pl1
-	btfss		REG03B,0
+	btfss		ON_OFF,0
 	    goto	L_0368
 	BANKSEL		PORTB
 	bsf			RB4
@@ -889,7 +891,7 @@ L_036B:
 	    goto	L_036B
 	movf		TMP_PKG,W
 	movwf		TIME_pl1
-	btfsc		REG03B,0
+	btfsc		ON_OFF,0
 	    goto	L_0378
 	BANKSEL		PORTB
 	bsf			RB4
@@ -944,7 +946,7 @@ L_0397:
 	call		_print_smb
 	goto		L_03B2
 L_039F:
-	movf		WH8REG,W
+	movf		MODE_NUM,W
 	xorlw		0x01		;b'0000 0001',' ',.01
 	btfsc		ZERO
 		goto	L_0383
@@ -964,7 +966,7 @@ L_039F:
 	btfsc		ZERO
 		goto	L_0397
 L_03B2:
-	goto		L_028F
+	goto		iic_msg
 ;*******************************************************************************
 print_word_from_EEPROM:
 	movwf		LINE_POS
@@ -1097,11 +1099,11 @@ L_044B:
 	call		_print_smb
 	movlw		0x00		;b'0000 0000',' ',.00
 	call		_print_smb
-	decfsz		REG03A,W
-	    goto	L_0457
+	decfsz		MUTE_REG,W
+	    goto	cnl_num
 	movlw		x?
 	goto		_print_smb
-L_0457:
+cnl_num:
 	movf		CNL_TMP,W
 	addlw		0x04		;b'0000 0100',' ',.04
 	goto		_print_smb
@@ -1287,27 +1289,10 @@ init_ports:
 	return
 ;*******************************************************************************
 clear_LCD:
-;	movlw		0x96		;b'1001 0110','–',.150
-;	movwf		LINE_POS
-;	clrf		LINE_NUM
 	bcf			CTRL_LCD, RS_LCD
 	movlw		CLRDISP
 	call		_print_smb	;
-;	bsf			CTRL_LCD, RS_LCD
-	call		p1562mks	;
-;L_0534:
-;	movlw		0x01		;b'0000 0001',' ',.01
-;	subwf		LINE_POS,F
-;	movlw		0x00		;b'0000 0000',' ',.00
-;	btfss		CARRY
-;	    decf	LINE_NUM,F
-;	subwf		LINE_NUM,F
-;	incf		LINE_POS,W
-;	btfsc		ZERO
-;	    incf	LINE_NUM,W
-;	btfss		ZERO
-;	    goto	L_0534
-;	bcf			CTRL_LCD, RS_LCD
+	call		p1562mks
 	movlw		DDRADDR|0x00
 	call		_print_smb
 	bsf			CTRL_LCD, RS_LCD
@@ -1319,17 +1304,17 @@ set_DDRAM_ADDR:
 	decfsz		LINE_NUM,W
 	    goto	line_2_LCD
 	decf		LINE_POS,W
-	xorlw		DDRADDR|LCD_LINE_ONE;
+	iorlw		DDRADDR|LCD_LINE_ONE
 	call		_print_smb
 line_2_LCD:
 	movf		LINE_NUM,W
-	xorlw		0x02		;b'0000 0010',' ',.02
+	xorlw		0x02
 	btfss		ZERO
-	    goto	L_0552
+	    goto	smb_mode
 	decf		LINE_POS,W
-	xorlw		DDRADDR|LCD_LINE_TWO;
+	iorlw		DDRADDR|LCD_LINE_TWO
 	call		_print_smb
-L_0552:
+smb_mode:
 	bsf			CTRL_LCD, RS_LCD
 	return
 ;*******************************************************************************
@@ -1368,7 +1353,7 @@ L_056C:
 ;*******************************************************************************
 L_056E:
 	call		clear_LCD
-	movf		WH8REG,F
+	movf		MODE_NUM,F
 	btfss		ZERO
 		goto	L_0576
 	movlw		0x05		;b'0000 0101',' ',.05
@@ -1376,7 +1361,7 @@ L_056E:
 	movlw		0x01		;b'0000 0001',' ',.01
 	call		set_DDRAM_ADDR
 L_0576:
-	movf		WH8REG,W
+	movf		MODE_NUM,W
 	call		print_word_from_EEPROM
 	goto		L_0380
 ;*******************************************************************************
@@ -1392,30 +1377,30 @@ clrrr:						;очистка диапозона регистпров
 	goto		clrrr
 ;*******************************************************************************
 wheel_8:
-	incf		WH8REG,F
+	incf		MODE_NUM,F
 	movlw		0x07		;b'0000 0111',' ',.07
-	subwf		WH8REG,W
+	subwf		MODE_NUM,W
 	btfss		CARRY
 	    return	
-	clrf		WH8REG
-	incf		WH8REG,F
+	clrf		MODE_NUM
+	incf		MODE_NUM,F
 	return
 ;*******************************************************************************
 invertor:
-	decfsz		REG03A,W
+	decfsz		MUTE_REG,W
 	    goto	not_ZERO
-	clrf		REG03A
+	clrf		MUTE_REG
 	return	
 not_ZERO:
-	clrf		REG03A
-	incf		REG03A,F
+	clrf		MUTE_REG
+	incf		MUTE_REG,F
 	return
 ;*******************************************************************************
 L_05AC:
-	decfsz		WH8REG,F
+	decfsz		MODE_NUM,F
 		return	
 	movlw		0x06		;b'0000 0110',' ',.06
-	movwf		WH8REG
+	movwf		MODE_NUM
 	return
 ;*******************************************************************************
 	end	; directive 'end of program'
