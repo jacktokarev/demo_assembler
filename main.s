@@ -31,7 +31,7 @@ ENC_OLD_A:	DS	1	;		equ	029h
 ENC_R_L:	DS	1	;		equ	02Ah
 PAMP_TMP:	DS	1	;		equ	02Bh
 PRESSED_KEY:DS	1	;		equ	02Ch
-MODE_NUM:		DS	1	;		equ	02Dh
+MODE_NUM:	DS	1	;		equ	02Dh
 TRBL_TMP:	DS	1	;		equ	02Eh
 VOL_TMP:	DS	1	;		equ	02Fh
 TIME_pl1:	DS	1	;		equ	030h
@@ -134,6 +134,8 @@ start:
 	clrf		STATUS
 	call		init_ports	; настойка портов
 	call		_init_lcd
+	call		_init_iic
+	call		_init_encoder
 	call		fill_CGRAM	; запись своих символов в CGRAM
 	call		clear_LCD
 ;*******************************************************************************
@@ -878,11 +880,11 @@ L_035B:
 	btfss		ON_OFF,0
 	    goto	L_0368
 	BANKSEL		PORTB
-	bsf			RB4
+	bsf			LCD_LED
 	goto		L_036B
 L_0368:
 	BANKSEL		PORTB
-	bcf			RB4
+	bcf			LCD_LED
 L_036B:
 	decf		TIME_pl1,F
 	movf		TIME_pl1,W
@@ -894,11 +896,11 @@ L_036B:
 	btfsc		ON_OFF,0
 	    goto	L_0378
 	BANKSEL		PORTB
-	bsf			RB4
+	bsf			LCD_LED
 	goto		L_037B
 L_0378:
 	BANKSEL		PORTB
-	bcf			RB4
+	bcf			LCD_LED
 L_037B:
 	incfsz		TIME_pl1,F
 	    goto	L_037B
@@ -1183,8 +1185,8 @@ check_PREV:
 check_ON_OFF:
 	BANKSEL		TRISB
 	bcf			TRISB2
-	BANKSEL		PORTB
-	btfsc		RB5
+	BANKSEL		ENC_PORT
+	btfsc		ENC_KEY
 	    return
 	movlw		0x04		;b'0000 0100',' ',.04
 	movwf		PRESSED_KEY
@@ -1261,10 +1263,11 @@ L_04FA:
 ; настройка портов
 init_ports:
 	clrf		INTCON
-	movlw		0x10		;b'0001 0000',' ',.16
+;	movlw		0x10		;b'0001 0000',' ',.16
+	movlw		0xFF
 	BANKSEL		TRISA
 	movwf		TRISA
-	movlw		0xE0		;b'1110 0000','а',.224
+;	movlw		0xE0		;b'1110 0000','а',.224
 	movwf		TRISB
 	bsf			OSCF		; частота внутреннего генератора 4 MHz
 	movlw		0x07		;b'0000 0111',' ',.07

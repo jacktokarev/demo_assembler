@@ -12,18 +12,28 @@ CTRL_LCD	EQU	PORTA		; порт сигналов управления
 TS_CTRL_LCD	EQU	TRISA		; регистр настройки порта управ.
 
 RS_LCD		EQU	PORTA_RA2_POSN	; сигнал RS
+#define		RS_L	BANKMASK(CTRL_LCD), RS_LCD	
 RW_LCD		EQU	PORTA_RA4_POSN	; сигнал RW
+#define		RW_L	BANKMASK(CTRL_LCD), RW_LCD
 E_LCD		EQU	PORTA_RA3_POSN	; сигнал E
+#define		E_L		BANKMAS(CTRL_LCD), E_LCD
 
 ; Подключение сигналов данных ЖКИ к портам контроллера
 
 DATA_LCD	EQU	PORTB		; порт данных
 TS_DATA_LCD	EQU	TRISB		; регстр настройки порта данных
+	
+LCD_LED_POSN	equ			BIT4
+#define			LCD_LED		BANKMASK(DATA_LCD), LCD_LED_POSN
 
 DB4_LCD		EQU	PORTB_RB0_POSN	; сигнал DB4
+#define		DB4_L	BANKMASK(DATA_LCD), DB4_LCD
 DB5_LCD		EQU	PORTB_RB1_POSN	; сигнал DB5
+#define		DB5_L	BANKMASK(DATA_LCD), DB5_LCD
 DB6_LCD		EQU	PORTB_RB2_POSN	; сигнал DB6
+#define		DB6_L	BANKMASK(DATA_LCD), DB6_LCD
 DB7_LCD		EQU	PORTB_RB3_POSN	; сигнал DB7
+#define		DB7_L	BANKMASK(DATA_LCD), DB7_LCD
 
 ; Флаги работы с LCD
 

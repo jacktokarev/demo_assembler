@@ -10,6 +10,12 @@ BIT_COUNTER:	DS	1
 
 psect			code
 
+;*******************************************************************************
+_init_iic:
+	BANKSEL		TS_IIC_PORT
+	bcf			TS_IIC_PORT, SDA_POSN
+	bcf			TS_IIC_PORT, SCL_POSN
+	return
 ;*******************************************************************************			
 _iic_send_byte:
 	BANKSEL		IIC_DATA
@@ -51,14 +57,14 @@ _iic_pulse_SCL:
 	call		_short_pause
 	bcf			SCL
 	return
-;*******************************************************************************	
+;*******************************************************************************
 _iic_ack_bit:
-	BANKSEL		CTRL_IIC_PORT
-	bsf			CTRL_IIC_PORT, SDA_POS
+	BANKSEL		TS_IIC_PORT
+	bsf			TS_IIC_PORT, SDA_POSN
 	call		_short_pause
 	call		_iic_pulse_SCL
-	BANKSEL		CTRL_IIC_PORT
-	bcf			CTRL_IIC_PORT, SDA_POS
+	BANKSEL		TS_IIC_PORT
+	bcf			TS_IIC_PORT, SDA_POSN
 	BANKSEL		IIC_PORT
 	return
 ;*******************************************************************************	
@@ -71,6 +77,7 @@ _iic_stop_condition:
 ;*******************************************************************************	
 GLOBAL	_iic_start_condition, _iic_pulse_SCL, _iic_stop_condition
 GLOBAL	_iic_send_byte
+GLOBAL	_init_iic
 
 ;*******************************************************************************	
 	end

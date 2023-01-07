@@ -29,6 +29,8 @@ _init_lcd:	; инициализация ЖКИ
     BCF		    TS_DATA_LCD, DB5_LCD;
     BCF		    TS_DATA_LCD, DB6_LCD;
     BCF		    TS_DATA_LCD, DB7_LCD;
+	
+	BCF			TS_DATA_LCD, LCD_LED_POSN
 
     BANKSEL	    PORTA		;
     BCF		    _LCD_FLAGS, LPKGH	;

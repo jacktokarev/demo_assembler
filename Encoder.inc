@@ -1,8 +1,12 @@
 #include		"Global.inc"
 	
 ENC_PORT		equ			PORTB
-ENC_A_POS		equ			BIT6
-ENC_B_POS		equ			BIT7
+TS_ENC_PORT		equ			TRISB
+ENC_A_POSN		equ			BIT6
+ENC_B_POSN		equ			BIT7
+ENC_KEY_POSN	equ			BIT5
+
 	
-#define			ENC_A		BANKMASK(ENC_PORT),ENC_A_POS
-#define			ENC_B		BANKMASK(ENC_PORT),ENC_B_POS
+#define			ENC_A		BANKMASK(ENC_PORT), ENC_A_POSN
+#define			ENC_B		BANKMASK(ENC_PORT), ENC_B_POSN
+#define			ENC_KEY		BANKMASK(ENC_PORT), ENC_KEY_POSN
