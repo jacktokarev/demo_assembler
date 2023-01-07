@@ -2,6 +2,7 @@
 #include	"Lcd.inc"
 #include	"TDA7313.inc"
 #include	"Encoder.inc"
+#include	"Keyboard.inc"
 	
 	EXTRN	_init_lcd, _print_smb, _PKG_LCD, p1562mks
 	EXTRN	_short_pause

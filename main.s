@@ -1157,37 +1157,54 @@ L_047E:
 check_KEY:
 	BANKSEL		PRESSED_KEY
 	clrf		PRESSED_KEY
-	BANKSEL		TRISB
-	bsf			TRISB0
-	BANKSEL		PORTB
-	btfsc		RB0
-	    goto	check_NEXT
+;	BANKSEL		TRISB
+;	bsf			TRISB0
+;	BANKSEL		PORTB
+;	btfsc		RB0
+	BANKSEL		TS_KEYS_PORT
+	bsf			TS_KEYS_PORT, MUTE_KEY_POSN
+	BANKSEL		KEYS_PORT
+	btfsc		MUTE_KEY
+		goto	check_NEXT
 	clrf		PRESSED_KEY
 	incf		PRESSED_KEY,F
 check_NEXT:
-	BANKSEL		TRISB
-	bcf			TRISB0
-	bsf			TRISB1
-	BANKSEL		PORTB
-	btfsc		RB1
-	    goto	check_PREV
+;	BANKSEL		TRISB
+;	bcf			TRISB0
+;	bsf			TRISB1
+;	BANKSEL		PORTB
+;
+;	btfsc		RB1
+	BANKSEL		TS_KEYS_PORT
+	bcf			TS_KEYS_PORT, MUTE_KEY_POSN
+	bsf			TS_KEYS_PORT, NEXT_KEY_POSN
+	BANKSEL		KEYS_PORT
+	btfsc		NEXT_KEY
+		goto	check_PREV
 	movlw		0x02		;b'0000 0010',' ',.02
 	movwf		PRESSED_KEY
 check_PREV:
-	BANKSEL		TRISB
-	bcf			TRISB1
-	bsf			TRISB2
-	BANKSEL		PORTB
-	btfsc		RB2
-	    goto	check_ON_OFF
+;	BANKSEL		TRISB
+;	bcf			TRISB1
+;	bsf			TRISB2
+;	BANKSEL		PORTB
+;	btfsc		RB2
+	BANKSEL		TS_KEYS_PORT
+	bcf			TS_KEYS_PORT, NEXT_KEY_POSN
+	bsf			TS_KEYS_PORT, PREV_KEY_POSN
+	BANKSEL		KEYS_PORT
+	btfsc		PREV_KEY
+		goto	check_ON_OFF
 	movlw		0x03		;b'0000 0011',' ',.03
 	movwf		PRESSED_KEY
 check_ON_OFF:
-	BANKSEL		TRISB
-	bcf			TRISB2
+;	BANKSEL		TRISB
+;	bcf			TRISB2
+	BANKSEL		TS_KEYS_PORT
+	bcf			TS_KEYS_PORT, PREV_KEY_POSN
 	BANKSEL		ENC_PORT
 	btfsc		ENC_KEY
-	    return
+		return
 	movlw		0x04		;b'0000 0100',' ',.04
 	movwf		PRESSED_KEY
 	return
