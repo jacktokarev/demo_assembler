@@ -30,14 +30,14 @@ ENC_ACTIV:	DS	1	;		equ	028h
 ENC_OLD_A:	DS	1	;		equ	029h
 ENC_R_L:	DS	1	;		equ	02Ah
 PAMP_TMP:	DS	1	;		equ	02Bh
-PRESSED_KEY:DS	1	;		equ	02Ch
+;PRESSED_KEY:DS	1	;		equ	02Ch
 MODE_NUM:	DS	1	;		equ	02Dh
 TRBL_TMP:	DS	1	;		equ	02Eh
 VOL_TMP:	DS	1	;		equ	02Fh
 TIME_pl1:	DS	1	;		equ	030h
 TMP_PKG:	DS	1	;		equ	031h
-LINE_POS:	DS	1	;		equ	032h
-LINE_NUM:	DS	1	;		equ	033h
+;LINE_POS:	DS	1	;		equ	032h
+;LINE_NUM:	DS	1	;		equ	033h
 COUNT3:		DS	1	;		equ	034h
 COUNT4:		DS	1	;		equ	035h
 REG036:		DS	1	;		equ	036h
@@ -157,35 +157,37 @@ COPYEEDT    MACRO   EADR, FREG
 	COPYEEDT	0x7D, CNL_TMP
 ;*******************************************************************************
 	call		iic_msg
-	call		L_056E
-L_005E:
-	call		check_KEY
+	call		print_mode
+;*******************************************************************************
+read_keys:
+	call		check_key
 	movf		PRESSED_KEY,W
 	btfsc		ZERO
-	    goto	L_0096
+	    goto	read_enc
 	movf		PRESSED_KEY,W
 	xorlw		0x04		;b'0000 0100',' ',.04
 	btfss		ZERO
-	    goto	L_006C
+	    goto	on_off_key
 	call		on_of_LED
-L_0067:
+release_key:
 	movf		PRESSED_KEY,F
 	btfsc		ZERO
-	    goto	L_006C
-	call		check_KEY
-	goto		L_0067
-L_006C:
+	    goto	on_off_key
+	call		check_key
+	goto		release_key
+on_off_key:
 	movf		ON_OFF,F
 	btfsc		ZERO
 	    goto	L_007A
 	goto		L_0084
+;*******************************************************************************
 L_0070:
 	call		invertor
 L_0071:
 	movf		PRESSED_KEY,F
 	btfsc		ZERO
 	    goto	L_0084
-	call		check_KEY
+	call		check_key
 	goto		L_0071
 L_0076:
 	call		wheel_8
@@ -193,6 +195,7 @@ L_0076:
 L_0078:
 	call		L_05AC
 	goto		L_0084
+;*******************************************************************************
 L_007A:
 	movf		PRESSED_KEY,W
 	xorlw		0x01		;b'0000 0001',' ',.01
@@ -204,8 +207,9 @@ L_007A:
 	xorlw		0x01		;b'0000 0001',' ',.01
 	btfsc		ZERO
 	    goto	L_0078
+;*******************************************************************************
 L_0084:
-	call		L_056E
+	call		print_mode
 	movlw		0xFF		;b'1111 1111','я',.255
 	movwf		REG022
 	movwf		REG023
@@ -224,7 +228,8 @@ L_008B:
 	    incf	COUNT2,W
 	btfss		ZERO
 	    goto	L_008B
-L_0096:
+;*******************************************************************************
+read_enc:
 	decfsz		ENC_ACTIV,W
 	    goto	L_00A2
 	clrf		ENC_ACTIV
@@ -357,7 +362,7 @@ L_00DC:
 	    goto	L_00D9
 L_0104:
 	clrf		REG024
-	call		L_056E
+	call		print_mode
 	movlw		0xFF		;b'1111 1111','я',.255
 	movwf		REG020
 	movlw		0x04		;b'0000 0100',' ',.04
@@ -394,10 +399,10 @@ L_0124:
 	decf		REG022,W
 	iorwf		REG023,W
 	btfss		ZERO
-	    goto	L_005E
+	    goto	read_keys
 	clrf		MODE_NUM
 	incf		MODE_NUM,F
-	call		L_056E
+	call		print_mode
 ;*******************************************************************************
 ;Сохранение значений регулируемых параметров в EEPROM
 	goto		save_fregs
@@ -439,7 +444,7 @@ IRP	FREG, VOL_TMP, TRBL_TMP, BASS_TMP, BAL_TMP, PAMP_TMP, CNL_TMP
 	call		save_freg
 	ENDM
 ;*******************************************************************************
-	goto		L_005E
+	goto		read_keys
 ;*******************************************************************************
 ;*******************************************************************************
 ; обработчик прерываний
@@ -1151,60 +1156,60 @@ L_047E:
 	movf		REG036,W
 	goto		up_line_LCD
 ;*******************************************************************************
-check_KEY:
-	BANKSEL		PRESSED_KEY
-	clrf		PRESSED_KEY
-;	BANKSEL		TRISB
-;	bsf			TRISB0
-;	BANKSEL		PORTB
-;	btfsc		RB0
-	BANKSEL		TS_KEYS_PORT
-	bsf			TS_KEYS_PORT, MUTE_KEY_POSN
-	BANKSEL		KEYS_PORT
-	btfsc		MUTE_KEY
-		goto	check_NEXT
-	clrf		PRESSED_KEY
-	incf		PRESSED_KEY,F
-check_NEXT:
-;	BANKSEL		TRISB
-;	bcf			TRISB0
-;	bsf			TRISB1
-;	BANKSEL		PORTB
-;
-;	btfsc		RB1
-	BANKSEL		TS_KEYS_PORT
-	bcf			TS_KEYS_PORT, MUTE_KEY_POSN
-	bsf			TS_KEYS_PORT, NEXT_KEY_POSN
-	BANKSEL		KEYS_PORT
-	btfsc		NEXT_KEY
-		goto	check_PREV
-	movlw		0x02		;b'0000 0010',' ',.02
-	movwf		PRESSED_KEY
-check_PREV:
-;	BANKSEL		TRISB
-;	bcf			TRISB1
-;	bsf			TRISB2
-;	BANKSEL		PORTB
-;	btfsc		RB2
-	BANKSEL		TS_KEYS_PORT
-	bcf			TS_KEYS_PORT, NEXT_KEY_POSN
-	bsf			TS_KEYS_PORT, PREV_KEY_POSN
-	BANKSEL		KEYS_PORT
-	btfsc		PREV_KEY
-		goto	check_ON_OFF
-	movlw		0x03		;b'0000 0011',' ',.03
-	movwf		PRESSED_KEY
-check_ON_OFF:
-;	BANKSEL		TRISB
-;	bcf			TRISB2
-	BANKSEL		TS_KEYS_PORT
-	bcf			TS_KEYS_PORT, PREV_KEY_POSN
-	BANKSEL		ENC_PORT
-	btfsc		ENC_KEY
-		return
-	movlw		0x04		;b'0000 0100',' ',.04
-	movwf		PRESSED_KEY
-	return
+;check_key:
+;	BANKSEL		PRESSED_KEY
+;	clrf		PRESSED_KEY
+;;	BANKSEL		TRISB
+;;	bsf			TRISB0
+;;	BANKSEL		PORTB
+;;	btfsc		RB0
+;	BANKSEL		TS_KEYS_PORT
+;	bsf			TS_KEYS_PORT, MUTE_KEY_POSN
+;	BANKSEL		KEYS_PORT
+;	btfsc		MUTE_KEY
+;		goto	check_NEXT
+;	clrf		PRESSED_KEY
+;	incf		PRESSED_KEY,F
+;check_NEXT:
+;;	BANKSEL		TRISB
+;;	bcf			TRISB0
+;;	bsf			TRISB1
+;;	BANKSEL		PORTB
+;;
+;;	btfsc		RB1
+;	BANKSEL		TS_KEYS_PORT
+;	bcf			TS_KEYS_PORT, MUTE_KEY_POSN
+;	bsf			TS_KEYS_PORT, NEXT_KEY_POSN
+;	BANKSEL		KEYS_PORT
+;	btfsc		NEXT_KEY
+;		goto	check_PREV
+;	movlw		0x02		;b'0000 0010',' ',.02
+;	movwf		PRESSED_KEY
+;check_PREV:
+;;	BANKSEL		TRISB
+;;	bcf			TRISB1
+;;	bsf			TRISB2
+;;	BANKSEL		PORTB
+;;	btfsc		RB2
+;	BANKSEL		TS_KEYS_PORT
+;	bcf			TS_KEYS_PORT, NEXT_KEY_POSN
+;	bsf			TS_KEYS_PORT, PREV_KEY_POSN
+;	BANKSEL		KEYS_PORT
+;	btfsc		PREV_KEY
+;		goto	check_ON_OFF
+;	movlw		0x03		;b'0000 0011',' ',.03
+;	movwf		PRESSED_KEY
+;check_ON_OFF:
+;;	BANKSEL		TRISB
+;;	bcf			TRISB2
+;	BANKSEL		TS_KEYS_PORT
+;	bcf			TS_KEYS_PORT, PREV_KEY_POSN
+;	BANKSEL		ENC_PORT
+;	btfsc		ENC_KEY
+;		return
+;	movlw		0x04		;b'0000 0100',' ',.04
+;	movwf		PRESSED_KEY
+;	return
 ;*******************************************************************************
 L_04C3:
 	movwf		REG036
@@ -1315,25 +1320,25 @@ clear_LCD:
 	bsf			CTRL_LCD, RS_LCD
 	return
 ;*******************************************************************************
-set_DDRAM_ADDR:
-	movwf		LINE_NUM
-	bcf			CTRL_LCD, RS_LCD
-	decfsz		LINE_NUM,W
-	    goto	line_2_LCD
-	decf		LINE_POS,W
-	iorlw		DDRADDR|LCD_LINE_ONE
-	call		_print_smb
-line_2_LCD:
-	movf		LINE_NUM,W
-	xorlw		0x02
-	btfss		ZERO
-	    goto	smb_mode
-	decf		LINE_POS,W
-	iorlw		DDRADDR|LCD_LINE_TWO
-	call		_print_smb
-smb_mode:
-	bsf			CTRL_LCD, RS_LCD
-	return
+;set_DDRAM_ADDR:
+;	movwf		LINE_NUM
+;	bcf			CTRL_LCD, RS_LCD
+;	decfsz		LINE_NUM,W
+;	    goto	line_2_LCD
+;	decf		LINE_POS,W
+;	iorlw		DDRADDR|LCD_LINE_ONE
+;	call		_print_smb
+;line_2_LCD:
+;	movf		LINE_NUM,W
+;	xorlw		0x02
+;	btfss		ZERO
+;	    goto	smb_mode
+;	decf		LINE_POS,W
+;	iorlw		DDRADDR|LCD_LINE_TWO
+;	call		_print_smb
+;smb_mode:
+;	bsf			CTRL_LCD, RS_LCD
+;	return
 ;*******************************************************************************
 L_0554:
 	movwf		LINE_POS
@@ -1368,7 +1373,7 @@ L_056C:
 	movf		REG036,W
 	goto		up_line_LCD
 ;*******************************************************************************
-L_056E:
+print_mode:
 	call		clear_LCD
 	movf		MODE_NUM,F
 	btfss		ZERO

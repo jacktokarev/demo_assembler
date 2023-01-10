@@ -164,3 +164,6 @@ FUNCSETDL	EQU	00010000B	; включает 8-ми битный режим
 CGRADDR		EQU	01000000B	; команда задания адреса CGRAM
 
 DDRADDR		EQU	10000000B	; команда задания адреса DDRAM
+		
+LCD_LINE_ONE		equ		00000000B
+LCD_LINE_TWO		equ		01000000B

@@ -1,4 +1,5 @@
 #include		"Global.inc"
+#include		"Encoder.inc"
 
 KEYS_PORT		equ		PORTB
 TS_KEYS_PORT	equ		TRISB

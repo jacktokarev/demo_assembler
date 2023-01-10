@@ -6,6 +6,9 @@ PSECT udata_bank0			;
 	
 _LCD_FLAGS:	    DS	1		; регистр флагов работы с LCD
 _PKG_LCD:	    DS	1		; пакет для отправки в LCD
+	
+LINE_NUM:		DS	1		;
+LINE_POS:		DS	1		;
 
 ;*******************************************************************************
 
@@ -131,6 +134,26 @@ shifted:
     RETURN
 
 ;*******************************************************************************
+set_DDRAM_ADDR:
+	movwf		LINE_NUM
+	bcf			CTRL_LCD, RS_LCD
+	decfsz		LINE_NUM,W
+	    goto	line_2_LCD
+	decf		LINE_POS,W
+	iorlw		DDRADDR|LCD_LINE_ONE
+	call		_print_smb
+line_2_LCD:
+	movf		LINE_NUM,W
+	xorlw		0x02
+	btfss		ZERO
+	    goto	smb_mode
+	decf		LINE_POS,W
+	iorlw		DDRADDR|LCD_LINE_TWO
+	call		_print_smb
+smb_mode:
+	bsf			CTRL_LCD, RS_LCD
+	return
+;*******************************************************************************
 p21483mks:
     MOVLW	    16			;
     MOVWF	    _TIME_HIEGHT	;
@@ -156,7 +179,8 @@ p39mks:
     GLOBAL	    _send_lcd		; отправка пакета в LCD
     GLOBAL	    _print_smb		;
     GLOBAL	    _shift_lcd		;
-    GLOBAL	    _LCD_FLAGS, _PKG_LCD;
+    GLOBAL	    _LCD_FLAGS, _PKG_LCD, LINE_NUM, LINE_POS;
+	GLOBAL		set_DDRAM_ADDR
     GLOBAL	    p1562mks		;
 ;*******************************************************************************
 
