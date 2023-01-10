@@ -13,7 +13,7 @@ TS_CTRL_LCD	EQU	TRISA		; регистр настройки порта управ
 
 RS_LCD		EQU	PORTA_RA2_POSN	; сигнал RS
 #define		RS_L	BANKMASK(CTRL_LCD), RS_LCD	
-RW_LCD		EQU	PORTA_RA4_POSN	; сигнал RW
+RW_LCD		EQU	PORTA_RA1_POSN	; сигнал RW
 #define		RW_L	BANKMASK(CTRL_LCD), RW_LCD
 E_LCD		EQU	PORTA_RA3_POSN	; сигнал E
 #define		E_L		BANKMAS(CTRL_LCD), E_LCD
@@ -164,3 +164,6 @@ FUNCSETDL	EQU	00010000B	; включает 8-ми битный режим
 CGRADDR		EQU	01000000B	; команда задания адреса CGRAM
 
 DDRADDR		EQU	10000000B	; команда задания адреса DDRAM
+		
+LCD_LINE_ONE		equ		00000000B
+LCD_LINE_TWO		equ		01000000B

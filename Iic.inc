@@ -5,8 +5,8 @@ EXTRN	_short_pause
 ; Настройка подключения линий шины I2C к портам микроконтроллера
 IIC_PORT		equ		PORTA
 TS_IIC_PORT		equ		TRISA
-SDA_POSN			equ		BIT6
-SCL_POSN			equ		BIT7
+SDA_POSN		equ		BIT6
+SCL_POSN		equ		BIT7
 	
 	
 #define			SDA		BANKMASK(IIC_PORT), SDA_POSN; линия данных
