@@ -495,7 +495,7 @@ int_tmr:
 	iorlw		0x00		;b'0000 0000',' ',.00
 	btfsc		ZERO
 	    goto	int_end		;
-	bcf		T0IF
+	bcf			T0IF
 ;*******************************************************************************
 ; Опрос ДУ
 	clrf		REG078
@@ -1284,7 +1284,7 @@ init_ports:
 	movlw		0xFF		;b'1111 1111','я',.255
 	BANKSEL		TMR0
 	movwf		TMR0
-	bsf			T0IE		; разрешить прерывания пр TMR0
+	bsf			T0IE		; разрешить прерывания по TMR0
 	bcf			T0IF		; сбросить флаг прерывания по TMR0
 	bsf			RBIE		; разрешить прерывания по RB7:RB4
 	bcf			RBIF		; сбросить флаг прерывания по RB7:RB4
