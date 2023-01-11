@@ -168,7 +168,7 @@ read_keys:
 	xorlw		0x04		;b'0000 0100',' ',.04
 	btfss		ZERO
 	    goto	on_off_key
-	call		on_of_LED
+	call		on_off_dev
 release_key:
 	movf		PRESSED_KEY,F
 	btfsc		ZERO
@@ -190,10 +190,10 @@ L_0071:
 	call		check_key
 	goto		L_0071
 L_0076:
-	call		wheel_8
+	call		mode_next
 	goto		L_0084
 L_0078:
-	call		L_05AC
+	call		mode_prev
 	goto		L_0084
 ;*******************************************************************************
 L_007A:
@@ -243,7 +243,7 @@ L_009E:
 	movlw		0xFF		;b'1111 1111','я',.255
 	movwf		REG022
 	movwf		REG023
-	call		L_0380
+	call		to_line_2
 L_00A2:
 	movf		REG024,W
 	btfsc		ZERO
@@ -256,7 +256,7 @@ L_00A2:
 	iorwf		REG020,W
 	btfss		ZERO
 	    goto	L_00AE
-	call		on_of_LED
+	call		on_off_dev
 L_00AE:
 	movf		ON_OFF,F
 	btfsc		ZERO
@@ -286,14 +286,14 @@ L_00C0:
 	iorwf		REG020,W
 	btfss		ZERO
 	    goto	L_0104
-	call		wheel_8
+	call		mode_next
 	goto		L_0104
 L_00C6:
 	movf		REG021,W
 	iorwf		REG020,W
 	btfss		ZERO
 	    goto	L_0104
-	call		L_05AC
+	call		mode_prev
 	goto		L_0104
 L_00CC:
 	call		encoder_minus
@@ -853,94 +853,94 @@ encoder_minus:
 	    return	
 	goto		chanel_wheel_left
 ;*******************************************************************************
-on_of_LED:
+on_off_dev:
 	decfsz		ON_OFF,W
 	    goto	on_dev
 	clrf		ON_OFF
 	clrf		MUTE_REG
 	clrf		MODE_NUM
 	incf		MODE_NUM,F
-	goto		L_0358
+	goto		pause_bl1
 on_dev:
 	clrf		ON_OFF
 	incf		ON_OFF,F
 	clrf		MUTE_REG
 	incf		MUTE_REG,F
 	clrf		MODE_NUM
-L_0358:
+pause_bl1:
 	bcf			GIE
-	movlw		0xFF		;b'1111 1111','я',.255
+	movlw		0xFF
 	movwf		TMP_PKG
-L_035B:
+bl_cycle:
 	decf		TMP_PKG,F
 	movf		TMP_PKG,W
-	xorlw		0xFF		;b'1111 1111','я',.255
+	xorlw		0xFF
 	btfsc		ZERO
-	    goto	L_037E
+	    goto	cont_on_off
 	movf		TMP_PKG,W
 	movwf		TIME_pl1
 	btfss		ON_OFF,0
-	    goto	L_0368
-	BANKSEL		PORTB
+	    goto	off_led1
+	BANKSEL		DATA_LCD
 	bsf			LCD_LED
-	goto		L_036B
-L_0368:
-	BANKSEL		PORTB
+	goto		pause_bl2
+off_led1:
+	BANKSEL		DATA_LCD
 	bcf			LCD_LED
-L_036B:
+pause_bl2:
 	decf		TIME_pl1,F
 	movf		TIME_pl1,W
 	xorlw		0xFF		;b'1111 1111','я',.255
 	btfss		ZERO
-	    goto	L_036B
+	    goto	pause_bl2
 	movf		TMP_PKG,W
 	movwf		TIME_pl1
 	btfsc		ON_OFF,0
-	    goto	L_0378
-	BANKSEL		PORTB
+	    goto	off_led2
+	BANKSEL		DATA_LCD
 	bsf			LCD_LED
-	goto		L_037B
-L_0378:
-	BANKSEL		PORTB
+	goto		pause_bl3
+off_led2:
+	BANKSEL		DATA_LCD
 	bcf			LCD_LED
-L_037B:
+pause_bl3:
 	incfsz		TIME_pl1,F
-	    goto	L_037B
-	goto		L_035B
-L_037E:
+	    goto	pause_bl3
+	goto		bl_cycle
+cont_on_off:
 	bsf		GIE
 	return
 ;*******************************************************************************
-L_0380:
-	movlw		0x02		;b'0000 0010',' ',.02
+to_line_2:
+	movlw		0x02		; строка для очистки
 	call		space_line_LCD
-	goto		L_039F
-L_0383:
+	goto		select_mode
+vol_mode:
 	movf		VOL_TMP,W
 	call		L_04C3
-	goto		L_03B2
-L_0386:
+	goto		iic_msg
+trbl_mode:
 	movf		TRBL_TMP,W
 	call		fill_skale
-	goto		L_03B2
-L_0389:
+	goto		iic_msg
+bass_mode:
 	movf		BASS_TMP,W
 	call		fill_skale
-	goto		L_03B2
-L_038C:
+	goto		iic_msg
+bal_mode:
 	movf		BAL_TMP,W
 	call		balance_scale
-	goto		L_03B2
-L_038F:
+	goto		iic_msg
+pamp_mode:
 	movlw		0x10		;b'0001 0000',' ',.16
 	movwf		LINE_POS
 	movlw		0x01		;b'0000 0001',' ',.01
 	call		set_DDRAM_ADDR
 	movf		PAMP_TMP,W
-	addlw		0x30		;b'0011 0000','0',.48
+	addlw		_0?			; '0'
 	call		_print_smb
-	goto		L_03B2
-L_0397:
+	goto		iic_msg
+cnl_mode:
 	movlw		0x10		;b'0001 0000',' ',.16
 	movwf		LINE_POS
 	movlw		0x01		;b'0000 0001',' ',.01
@@ -948,28 +948,28 @@ L_0397:
 	movf		CNL_TMP,W
 	addlw		0x04		;b'0000 0100',' ',.04
 	call		_print_smb
-	goto		L_03B2
-L_039F:
+	goto		iic_msg
+;*******************************************************************************
+select_mode:
 	movf		MODE_NUM,W
 	xorlw		0x01		;b'0000 0001',' ',.01
 	btfsc		ZERO
-		goto	L_0383
+		goto	vol_mode
 	xorlw		0x03		;b'0000 0011',' ',.03
 	btfsc		ZERO
-		goto	L_0386
+		goto	trbl_mode
 	xorlw		0x01		;b'0000 0001',' ',.01
 	btfsc		ZERO
-		goto	L_0389
+		goto	bass_mode
 	xorlw		0x07		;b'0000 0111',' ',.07
 	btfsc		ZERO
-		goto	L_038C
+		goto	bal_mode
 	xorlw		0x01		;b'0000 0001',' ',.01
 	btfsc		ZERO
-		goto	L_038F
+		goto	pamp_mode
 	xorlw		0x03		;b'0000 0011',' ',.03
 	btfsc		ZERO
-		goto	L_0397
-L_03B2:
+		goto	cnl_mode
 	goto		iic_msg
 ;*******************************************************************************
 print_word_from_EEPROM:
@@ -1000,7 +1000,6 @@ print_word:
 	movwf		EEADR
 	bsf			EECON1,0
 	movf		EEDATA,W
-;	BANKSEL		_PKG_LCD
 	call		_print_smb
 	incf		LINE_NUM,F
 	movf		LINE_NUM,W
@@ -1022,66 +1021,23 @@ end_phrase_:
 	    return	
 	goto		print_word
 ;*******************************************************************************
-space_line_LCD:
-	movwf		LINE_POS
-	decfsz		LINE_POS,W
-	    goto	L_041E
-	bcf			CTRL_LCD, RS_LCD
-	movlw		DDRADDR|0x00
-	call		_print_smb
-	bsf			CTRL_LCD, RS_LCD    
-	clrf		LINE_NUM
-space_to_position:
-	movlw		SPACE?
-	call		_print_smb
-	incf		LINE_NUM,F
-	movlw		0x10		;b'0001 0000',' ',.16
+; пересчет и вывод уровня в десятичном виде, символов динамика и номера канала
+end_up_line:
+	movwf		LINE_NUM	; шестнадцатиричное значение уровня
+	movlw		_0?			; '0'
+	movwf		COUNT3		; счетчик десятков (в символах LCD)
+	movwf		LINE_POS	; единицы в (символах LCD)
+tens_counter:
+	movlw		0x0A		; 10
 	subwf		LINE_NUM,W
 	btfss		CARRY
-	    goto	space_to_position
-	bcf			CTRL_LCD, RS_LCD
-	movlw		DDRADDR|0x00
-	call		_print_smb
-	bsf			CTRL_LCD, RS_LCD
-L_041E:
-	movf		LINE_POS,W
-	xorlw		0x02		;b'0000 0010',' ',.02
-	btfss		ZERO
-	    return	
-	bcf			CTRL_LCD, RS_LCD
-	movlw		DDRADDR|0x40
-	call		_print_smb
-	bsf			CTRL_LCD, RS_LCD
-	clrf		LINE_NUM
-sp_to_position:
-	movlw		SPACE?
-	call		_print_smb
-	incf		LINE_NUM,F
-	movlw		0x10		;b'0001 0000',' ',.16
-	subwf		LINE_NUM,W
-	btfss		CARRY
-	    goto	sp_to_position
-	bcf			CTRL_LCD, RS_LCD
-	movlw		DDRADDR|0x40
-	call		_print_smb
-	bsf			CTRL_LCD, RS_LCD
-	return
-;*******************************************************************************
-up_line_LCD:
-	movwf		LINE_NUM
-	movlw		0x30		;b'0011 0000','0',.48
-	movwf		COUNT3
-	movwf		LINE_POS
-L_0437:
-	movlw		0x0A		;b'0000 1010',' ',.10
-	subwf		LINE_NUM,W
-	btfss		CARRY
-	    goto	L_043F
+	    goto	units
 	incf		COUNT3,F
-	movlw		0xF6		;b'1111 0110','ц',.246
+;	movlw		0xF6	
+	movlw		not 0x09	; -9
 	addwf		LINE_NUM,F
-	goto		L_0437
-L_043F:
+	goto		tens_counter
+units:
 	movf		LINE_NUM,W
 	addwf		LINE_POS,F
 	bcf			CTRL_LCD, RS_LCD
@@ -1089,27 +1045,27 @@ L_043F:
 	call		_print_smb
 	bsf			CTRL_LCD, RS_LCD
 	movf		COUNT3,W
-	xorlw		0x30		;b'0011 0000','0',.48
+	xorlw		_0?			; '0'
 	btfss		ZERO
-		goto	L_044B
+		goto	print_units
 	movlw		SPACE?
 	movwf		COUNT3
-L_044B:
-	movf		COUNT3,W
+print_units:
+	movf		COUNT3,W	; число десятков (пробел при ноле)
 	call		_print_smb
-	movf		LINE_POS,W
+	movf		LINE_POS,W	; единицы
 	call		_print_smb
-	movlw		SPACE?
+	movlw		SPACE?		; пробел
 	call		_print_smb
-	movlw		0x00		;b'0000 0000',' ',.00
+	movlw		0x00		; символ динамика
 	call		_print_smb
 	decfsz		MUTE_REG,W
 	    goto	cnl_num
-	movlw		x?
-	goto		_print_smb
+	movlw		x?			; включено приглушение (MUTE)
+	goto		_print_smb	;
 cnl_num:
 	movf		CNL_TMP,W
-	addlw		0x04		;b'0000 0100',' ',.04
+	addlw		0x04		; символ номера канала
 	goto		_print_smb
 ;*******************************************************************************
 balance_scale:
@@ -1154,62 +1110,7 @@ L_0476:
 	goto		L_0476
 L_047E:
 	movf		REG036,W
-	goto		up_line_LCD
-;*******************************************************************************
-;check_key:
-;	BANKSEL		PRESSED_KEY
-;	clrf		PRESSED_KEY
-;;	BANKSEL		TRISB
-;;	bsf			TRISB0
-;;	BANKSEL		PORTB
-;;	btfsc		RB0
-;	BANKSEL		TS_KEYS_PORT
-;	bsf			TS_KEYS_PORT, MUTE_KEY_POSN
-;	BANKSEL		KEYS_PORT
-;	btfsc		MUTE_KEY
-;		goto	check_NEXT
-;	clrf		PRESSED_KEY
-;	incf		PRESSED_KEY,F
-;check_NEXT:
-;;	BANKSEL		TRISB
-;;	bcf			TRISB0
-;;	bsf			TRISB1
-;;	BANKSEL		PORTB
-;;
-;;	btfsc		RB1
-;	BANKSEL		TS_KEYS_PORT
-;	bcf			TS_KEYS_PORT, MUTE_KEY_POSN
-;	bsf			TS_KEYS_PORT, NEXT_KEY_POSN
-;	BANKSEL		KEYS_PORT
-;	btfsc		NEXT_KEY
-;		goto	check_PREV
-;	movlw		0x02		;b'0000 0010',' ',.02
-;	movwf		PRESSED_KEY
-;check_PREV:
-;;	BANKSEL		TRISB
-;;	bcf			TRISB1
-;;	bsf			TRISB2
-;;	BANKSEL		PORTB
-;;	btfsc		RB2
-;	BANKSEL		TS_KEYS_PORT
-;	bcf			TS_KEYS_PORT, NEXT_KEY_POSN
-;	bsf			TS_KEYS_PORT, PREV_KEY_POSN
-;	BANKSEL		KEYS_PORT
-;	btfsc		PREV_KEY
-;		goto	check_ON_OFF
-;	movlw		0x03		;b'0000 0011',' ',.03
-;	movwf		PRESSED_KEY
-;check_ON_OFF:
-;;	BANKSEL		TRISB
-;;	bcf			TRISB2
-;	BANKSEL		TS_KEYS_PORT
-;	bcf			TS_KEYS_PORT, PREV_KEY_POSN
-;	BANKSEL		ENC_PORT
-;	btfsc		ENC_KEY
-;		return
-;	movlw		0x04		;b'0000 0100',' ',.04
-;	movwf		PRESSED_KEY
-;	return
+	goto		end_up_line
 ;*******************************************************************************
 L_04C3:
 	movwf		REG036
@@ -1244,7 +1145,7 @@ L_04DD:
 	movf		REG037,W
 	call		_print_smb
 	movf		REG036,W
-	goto		up_line_LCD
+	goto		end_up_line
 ;*******************************************************************************
 L_04E1:
 	movwf		TMP_PKG
@@ -1282,11 +1183,9 @@ L_04FA:
 ; настройка портов
 init_ports:
 	clrf		INTCON
-;	movlw		0x10		;b'0001 0000',' ',.16
 	movlw		0xFF
 	BANKSEL		TRISA
 	movwf		TRISA
-;	movlw		0xE0		;b'1110 0000','а',.224
 	movwf		TRISB
 	bsf			OSCF		; частота внутреннего генератора 4 MHz
 	movlw		0x07		;b'0000 0111',' ',.07
@@ -1320,26 +1219,6 @@ clear_LCD:
 	bsf			CTRL_LCD, RS_LCD
 	return
 ;*******************************************************************************
-;set_DDRAM_ADDR:
-;	movwf		LINE_NUM
-;	bcf			CTRL_LCD, RS_LCD
-;	decfsz		LINE_NUM,W
-;	    goto	line_2_LCD
-;	decf		LINE_POS,W
-;	iorlw		DDRADDR|LCD_LINE_ONE
-;	call		_print_smb
-;line_2_LCD:
-;	movf		LINE_NUM,W
-;	xorlw		0x02
-;	btfss		ZERO
-;	    goto	smb_mode
-;	decf		LINE_POS,W
-;	iorlw		DDRADDR|LCD_LINE_TWO
-;	call		_print_smb
-;smb_mode:
-;	bsf			CTRL_LCD, RS_LCD
-;	return
-;*******************************************************************************
 L_0554:
 	movwf		LINE_POS
 	clrf		TMP_PKG
@@ -1371,21 +1250,22 @@ L_0564:
 	goto		L_0564
 L_056C:
 	movf		REG036,W
-	goto		up_line_LCD
+	goto		end_up_line
 ;*******************************************************************************
 print_mode:
 	call		clear_LCD
 	movf		MODE_NUM,F
 	btfss		ZERO
-		goto	L_0576
-	movlw		0x05		;b'0000 0101',' ',.05
-	movwf		LINE_POS
-	movlw		0x01		;b'0000 0001',' ',.01
+		goto	activ_modes
+	movlw		0x05		; режим "ожидание"
+	movwf		LINE_POS	; позиция в строке
+	movlw		0x01		; строка для вывода
 	call		set_DDRAM_ADDR
-L_0576:
+activ_modes:
 	movf		MODE_NUM,W
 	call		print_word_from_EEPROM
-	goto		L_0380
+;*******************************************************************************
+	goto		to_line_2
 ;*******************************************************************************
 clrregs:					;очиситка регистов
 	clrwdt					;сброс сторожевого таймера
@@ -1398,7 +1278,7 @@ clrrr:						;очистка диапозона регистпров
 	xorwf		FSR,W
 	goto		clrrr
 ;*******************************************************************************
-wheel_8:
+mode_next:
 	incf		MODE_NUM,F
 	movlw		0x07		;b'0000 0111',' ',.07
 	subwf		MODE_NUM,W
@@ -1406,6 +1286,13 @@ wheel_8:
 	    return	
 	clrf		MODE_NUM
 	incf		MODE_NUM,F
+	return
+;*******************************************************************************
+mode_prev:
+	decfsz		MODE_NUM,F
+		return	
+	movlw		0x06		;b'0000 0110',' ',.06
+	movwf		MODE_NUM
 	return
 ;*******************************************************************************
 invertor:
@@ -1418,11 +1305,5 @@ not_ZERO:
 	incf		MUTE_REG,F
 	return
 ;*******************************************************************************
-L_05AC:
-	decfsz		MODE_NUM,F
-		return	
-	movlw		0x06		;b'0000 0110',' ',.06
-	movwf		MODE_NUM
-	return
-;*******************************************************************************
+
 	end	; directive 'end of program'

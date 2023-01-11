@@ -154,6 +154,51 @@ smb_mode:
 	bsf			CTRL_LCD, RS_LCD
 	return
 ;*******************************************************************************
+space_line_LCD:
+	movwf		LINE_POS
+	decfsz		LINE_POS,W
+	    goto	line_2
+	bcf			CTRL_LCD, RS_LCD
+	movlw		DDRADDR|0x00
+	call		_print_smb
+	bsf			CTRL_LCD, RS_LCD    
+	clrf		LINE_NUM
+space_to_position:
+	movlw		SPACE?
+	call		_print_smb
+	incf		LINE_NUM,F
+	movlw		0x10		;b'0001 0000',' ',.16
+	subwf		LINE_NUM,W
+	btfss		CARRY
+	    goto	space_to_position
+	bcf			CTRL_LCD, RS_LCD
+	movlw		DDRADDR|0x00
+	call		_print_smb
+	bsf			CTRL_LCD, RS_LCD
+line_2:
+	movf		LINE_POS,W
+	xorlw		0x02		;b'0000 0010',' ',.02
+	btfss		ZERO
+	    return	
+	bcf			CTRL_LCD, RS_LCD
+	movlw		DDRADDR|0x40
+	call		_print_smb
+	bsf			CTRL_LCD, RS_LCD
+	clrf		LINE_NUM
+sp_to_position:
+	movlw		SPACE?
+	call		_print_smb
+	incf		LINE_NUM,F
+	movlw		0x10		;b'0001 0000',' ',.16
+	subwf		LINE_NUM,W
+	btfss		CARRY
+	    goto	sp_to_position
+	bcf			CTRL_LCD, RS_LCD
+	movlw		DDRADDR|0x40
+	call		_print_smb
+	bsf			CTRL_LCD, RS_LCD
+	return
+;*******************************************************************************
 p21483mks:
     MOVLW	    16			;
     MOVWF	    _TIME_HIEGHT	;
@@ -180,7 +225,7 @@ p39mks:
     GLOBAL	    _print_smb		;
     GLOBAL	    _shift_lcd		;
     GLOBAL	    _LCD_FLAGS, _PKG_LCD, LINE_NUM, LINE_POS;
-	GLOBAL		set_DDRAM_ADDR
+	GLOBAL		set_DDRAM_ADDR, space_line_LCD
     GLOBAL	    p1562mks		;
 ;*******************************************************************************
 
