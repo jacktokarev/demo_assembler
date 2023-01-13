@@ -317,6 +317,7 @@ L_00D9:
 L_00DA:
 	movwf		MODE_NUM
 	goto		L_0104
+;*******************************************************************************
 L_00DC:
 	movf		REG024,W
 	xorlw		0x01		;b'0000 0001',' ',.01
@@ -1031,7 +1032,6 @@ tens_counter:
 	btfss		CARRY
 	    goto	units
 	incf		COUNT3,F
-;	movlw		0xF6	
 	movlw		not 0x09	; -9
 	addwf		LINE_NUM,F
 	goto		tens_counter
@@ -1068,115 +1068,54 @@ cnl_num:
 ;*******************************************************************************
 bal_scale:
 	movwf		REG036
-	clrf		REG037
-L_045C:
-	incf		REG037,F
-	movf		REG036,W
-	movwf		COUNT4
-	bcf			CARRY
-	rrf			COUNT4,F
-	bcf			CARRY
-	rrf			COUNT4,F
-	movf		COUNT4,W
-	subwf		REG037,W
-	btfsc		CARRY
-		goto	L_046A
-	movlw		0xFF		;b'1111 1111','я',.255
-	call		_print_smb
-	goto		L_045C
-L_046A:
+	call		full_segs
 	movlw		RIGHT?
 	call		_print_smb
 	movlw		LEFT?
 	call		_print_smb
-	movf		REG036,W
-	movwf		COUNT4
-	bcf			CARRY
-	rrf			COUNT4,F
-	bcf			CARRY
-	rrf			COUNT4,F
-	movf		COUNT4,W
-	movwf		REG037
-L_0476:
-	movlw		0x10		;b'0001 0000',' ',.16
-	subwf		REG037,W
-	btfsc		CARRY
-	goto		L_047E
-	movlw		0xFF		;b'1111 1111','я',.255
-	call		_print_smb
-	incf		REG037,F
-	goto		L_0476
-L_047E:
-	movf		REG036,W
-	goto		end_up_line
+	movlw		0x40
+	movwf		TMP_PKG
+	movf		REG036, W
+	subwf		TMP_PKG, W
+	call		full_segs
+	goto		e_u_l
+;	movf		REG036, W
+;	goto		end_up_line
 ;*******************************************************************************
 vol_scale:
 	movwf		REG036
-	clrf		REG037
-L_04C5:
-	movlw		0x05		;b'0000 0101',' ',.05
-	movwf		TMP_PKG1
-	movf		REG036,W
-	call		L_04E1
-	subwf		REG037,W
-	btfsc		CARRY
-	    goto	L_04D0
-	movlw		0xFF		;b'1111 1111','я',.255
+	call		full_segs
+	btfsc		ZERO
+		movlw	SPACE?
 	call		_print_smb
-	incf		REG037,F
-	goto		L_04C5
-L_04D0:
-	movlw		0xFB		;b'1111 1011','ы',.251
-	movwf		TMP_PKG1
-	movf		REG037,W
-	call		L_0554
-	movwf		COUNT4
-	movf		REG036,W
-	addwf		COUNT4,W
-	movwf		REG037
-	movf		REG037,F
-	btfss		ZERO
-	    goto	L_04DD
-	movlw		0x20		;b'0010 0000',' ',.32
-	movwf		REG037
-L_04DD:
-	movf		REG037,W
-	call		_print_smb
-	movf		REG036,W
+	goto		e_u_l
+;	movf		REG036, W
+;	goto		end_up_line
+;*******************************************************************************
+freq_scale:
+	movwf		REG036
+REPT	4
+	addwf		REG036, W
+	ENDM
+	call		full_segs
+;*******************************************************************************
+e_u_l:
+	movf		REG036, W
 	goto		end_up_line
 ;*******************************************************************************
-L_04E1:
+full_segs:
 	movwf		TMP_PKG
-	clrf		LINE_NUM
-	movf		TMP_PKG1,W
-	btfsc		ZERO
-		goto	L_04FA
-	clrf		LINE_POS
-L_04E7:
-	incf		LINE_POS,F
-	btfsc		TMP_PKG1,7
-		goto	L_04ED
-	bcf			CARRY
-	rlf			TMP_PKG1,F
-	goto		L_04E7
-L_04ED:
-	bcf			CARRY
-	rlf			LINE_NUM,F
-	movf		TMP_PKG1,W
-	subwf		TMP_PKG,W
-	btfss		CARRY
-		goto	L_04F7
-	movf		TMP_PKG1,W
+	movlw		0x05
 	subwf		TMP_PKG,F
-	bsf			LINE_NUM,0
-	bcf			CARRY
-L_04F7:
-	rrf			TMP_PKG1,F
-	decfsz		LINE_POS,F
-		goto	L_04ED
-L_04FA:
-	movf		LINE_NUM,W
+	btfsc		CARRY
+		goto	full_seg
+	movlw		0x05
+	addwf		TMP_PKG, W
 	return
+full_seg:	
+	movlw		0xFF
+	call		_print_smb
+	goto		full_segs+1
 ;*******************************************************************************
 ; настройка портов
 init_ports:
@@ -1217,38 +1156,22 @@ clear_LCD:
 	bsf			CTRL_LCD, RS_LCD
 	return
 ;*******************************************************************************
-L_0554:
-	movwf		LINE_POS
-	clrf		TMP_PKG
-L_0556:
-	movf		TMP_PKG1,W
-	btfsc		LINE_POS,0
-	    addwf	TMP_PKG,F
-	bcf			CARRY
-	rlf			TMP_PKG1,F
-	bcf			CARRY
-	rrf			LINE_POS,F
-	movf		LINE_POS,F
-	btfss		ZERO
-	    goto	L_0556
-	movf		TMP_PKG,W
-	return
-;*******************************************************************************
-freq_scale:
-	movwf		COUNT4
-	clrf		REG036
-L_0564:
-	movf		COUNT4,W
-	subwf		REG036,W
-	btfsc		CARRY
-		goto	L_056C
-	movlw		0xFF		;b'1111 1111','я',.255
-	call		_print_smb
-	incf		REG036,F
-	goto		L_0564
-L_056C:
-	movf		REG036,W
-	goto		end_up_line
+;L_0554:
+;	movwf		LINE_POS
+;	clrf		TMP_PKG
+;L_0556:
+;	movf		TMP_PKG1,W
+;	btfsc		LINE_POS,0
+;	    addwf	TMP_PKG,F
+;	bcf			CARRY
+;	rlf			TMP_PKG1,F
+;	bcf			CARRY
+;	rrf			LINE_POS,F
+;	movf		LINE_POS,F
+;	btfss		ZERO
+;	    goto	L_0556
+;	movf		TMP_PKG,W
+;	return
 ;*******************************************************************************
 print_mode:
 	call		clear_LCD
