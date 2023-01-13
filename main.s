@@ -30,14 +30,11 @@ ENC_ACTIV:	DS	1	;		equ	028h
 ENC_OLD_A:	DS	1	;		equ	029h
 ENC_R_L:	DS	1	;		equ	02Ah
 PAMP_TMP:	DS	1	;		equ	02Bh
-;PRESSED_KEY:DS	1	;		equ	02Ch
 MODE_NUM:	DS	1	;		equ	02Dh
 TRBL_TMP:	DS	1	;		equ	02Eh
 VOL_TMP:	DS	1	;		equ	02Fh
-TIME_pl1:	DS	1	;		equ	030h
+TMP_PKG1:	DS	1	;		equ	030h
 TMP_PKG:	DS	1	;		equ	031h
-;LINE_POS:	DS	1	;		equ	032h
-;LINE_NUM:	DS	1	;		equ	033h
 COUNT3:		DS	1	;		equ	034h
 COUNT4:		DS	1	;		equ	035h
 REG036:		DS	1	;		equ	036h
@@ -85,10 +82,10 @@ psect	edata
 
 ;*******************************************************************************
 psect ResVect, class=CODE, abs, delta=2
-	org	0x0000
+	org			0x0000
 ResetVector:
 	goto		start
-	org	0x0004
+	org			0x0004
 ;*******************************************************************************
 HighInterruptVector:
 	movwf		TMP_W		; сохранить значение аккумулятора
@@ -178,37 +175,37 @@ release_key:
 on_off_key:
 	movf		ON_OFF,F
 	btfsc		ZERO
-	    goto	L_007A
-	goto		L_0084
+	    goto	other_key
+	goto		in_mode
 ;*******************************************************************************
-L_0070:
-	call		invertor
-L_0071:
+mute_key:
+	call		mute_on_off
+rls_key:
 	movf		PRESSED_KEY,F
 	btfsc		ZERO
-	    goto	L_0084
+	    goto	in_mode
 	call		check_key
-	goto		L_0071
-L_0076:
+	goto		rls_key
+next_key:
 	call		mode_next
-	goto		L_0084
-L_0078:
+	goto		in_mode
+prev_key:
 	call		mode_prev
-	goto		L_0084
+	goto		in_mode
 ;*******************************************************************************
-L_007A:
+other_key:
 	movf		PRESSED_KEY,W
-	xorlw		0x01		;b'0000 0001',' ',.01
+	xorlw		0x01		; 1 - "MUTE" key
 	btfsc		ZERO
-	    goto	L_0070
-	xorlw		0x03		;b'0000 0011',' ',.03
+	    goto	mute_key
+	xorlw		0x03		; 2 - "NEXT" key
 	btfsc		ZERO
-	    goto	L_0076
-	xorlw		0x01		;b'0000 0001',' ',.01
+	    goto	next_key
+	xorlw		0x01		; 3 - "PREV" key
 	btfsc		ZERO
-	    goto	L_0078
+	    goto	prev_key
 ;*******************************************************************************
-L_0084:
+in_mode:
 	call		print_mode
 	movlw		0xFF		;b'1111 1111','я',.255
 	movwf		REG022
@@ -231,20 +228,21 @@ L_008B:
 ;*******************************************************************************
 read_enc:
 	decfsz		ENC_ACTIV,W
-	    goto	L_00A2
+	    goto	decode_irrc	; энкодер не активен
 	clrf		ENC_ACTIV
 	decfsz		ENC_R_L,W
-	    goto	L_009D
+	    goto	e_m
 	call		encoder_plus
-	goto		L_009E
-L_009D:
+	goto		e_n
+e_m:
 	call		encoder_minus
-L_009E:
+e_n:
 	movlw		0xFF		;b'1111 1111','я',.255
 	movwf		REG022
 	movwf		REG023
 	call		to_line_2
-L_00A2:
+;*******************************************************************************
+decode_irrc:
 	movf		REG024,W
 	btfsc		ZERO
 	    goto	L_010D
@@ -279,7 +277,7 @@ L_00BA:
 	iorwf		REG020,W
 	btfss		ZERO
 	    goto	L_0104
-	call		invertor
+	call		mute_on_off
 	goto		L_0104
 L_00C0:
 	movf		REG021,W
@@ -878,7 +876,7 @@ bl_cycle:
 	btfsc		ZERO
 	    goto	cont_on_off
 	movf		TMP_PKG,W
-	movwf		TIME_pl1
+	movwf		TMP_PKG1
 	btfss		ON_OFF,0
 	    goto	off_led1
 	BANKSEL		DATA_LCD
@@ -888,13 +886,13 @@ off_led1:
 	BANKSEL		DATA_LCD
 	bcf			LCD_LED
 pause_bl2:
-	decf		TIME_pl1,F
-	movf		TIME_pl1,W
+	decf		TMP_PKG1,F
+	movf		TMP_PKG1,W
 	xorlw		0xFF		;b'1111 1111','я',.255
 	btfss		ZERO
 	    goto	pause_bl2
 	movf		TMP_PKG,W
-	movwf		TIME_pl1
+	movwf		TMP_PKG1
 	btfsc		ON_OFF,0
 	    goto	off_led2
 	BANKSEL		DATA_LCD
@@ -904,7 +902,7 @@ off_led2:
 	BANKSEL		DATA_LCD
 	bcf			LCD_LED
 pause_bl3:
-	incfsz		TIME_pl1,F
+	incfsz		TMP_PKG1,F
 	    goto	pause_bl3
 	goto		bl_cycle
 cont_on_off:
@@ -917,19 +915,19 @@ to_line_2:
 	goto		select_mode
 vol_mode:
 	movf		VOL_TMP,W
-	call		L_04C3
+	call		vol_scale
 	goto		iic_msg
 trbl_mode:
 	movf		TRBL_TMP,W
-	call		fill_skale
+	call		freq_scale
 	goto		iic_msg
 bass_mode:
 	movf		BASS_TMP,W
-	call		fill_skale
+	call		freq_scale
 	goto		iic_msg
 bal_mode:
 	movf		BAL_TMP,W
-	call		balance_scale
+	call		bal_scale
 	goto		iic_msg
 pamp_mode:
 	movlw		0x10		;b'0001 0000',' ',.16
@@ -1068,7 +1066,7 @@ cnl_num:
 	addlw		0x04		; символ номера канала
 	goto		_print_smb
 ;*******************************************************************************
-balance_scale:
+bal_scale:
 	movwf		REG036
 	clrf		REG037
 L_045C:
@@ -1112,12 +1110,12 @@ L_047E:
 	movf		REG036,W
 	goto		end_up_line
 ;*******************************************************************************
-L_04C3:
+vol_scale:
 	movwf		REG036
 	clrf		REG037
 L_04C5:
 	movlw		0x05		;b'0000 0101',' ',.05
-	movwf		TIME_pl1
+	movwf		TMP_PKG1
 	movf		REG036,W
 	call		L_04E1
 	subwf		REG037,W
@@ -1129,7 +1127,7 @@ L_04C5:
 	goto		L_04C5
 L_04D0:
 	movlw		0xFB		;b'1111 1011','ы',.251
-	movwf		TIME_pl1
+	movwf		TMP_PKG1
 	movf		REG037,W
 	call		L_0554
 	movwf		COUNT4
@@ -1150,30 +1148,30 @@ L_04DD:
 L_04E1:
 	movwf		TMP_PKG
 	clrf		LINE_NUM
-	movf		TIME_pl1,W
+	movf		TMP_PKG1,W
 	btfsc		ZERO
 		goto	L_04FA
 	clrf		LINE_POS
 L_04E7:
 	incf		LINE_POS,F
-	btfsc		TIME_pl1,7
+	btfsc		TMP_PKG1,7
 		goto	L_04ED
 	bcf			CARRY
-	rlf			TIME_pl1,F
+	rlf			TMP_PKG1,F
 	goto		L_04E7
 L_04ED:
 	bcf			CARRY
 	rlf			LINE_NUM,F
-	movf		TIME_pl1,W
+	movf		TMP_PKG1,W
 	subwf		TMP_PKG,W
 	btfss		CARRY
 		goto	L_04F7
-	movf		TIME_pl1,W
+	movf		TMP_PKG1,W
 	subwf		TMP_PKG,F
 	bsf			LINE_NUM,0
 	bcf			CARRY
 L_04F7:
-	rrf			TIME_pl1,F
+	rrf			TMP_PKG1,F
 	decfsz		LINE_POS,F
 		goto	L_04ED
 L_04FA:
@@ -1223,11 +1221,11 @@ L_0554:
 	movwf		LINE_POS
 	clrf		TMP_PKG
 L_0556:
-	movf		TIME_pl1,W
+	movf		TMP_PKG1,W
 	btfsc		LINE_POS,0
 	    addwf	TMP_PKG,F
 	bcf			CARRY
-	rlf			TIME_pl1,F
+	rlf			TMP_PKG1,F
 	bcf			CARRY
 	rrf			LINE_POS,F
 	movf		LINE_POS,F
@@ -1236,7 +1234,7 @@ L_0556:
 	movf		TMP_PKG,W
 	return
 ;*******************************************************************************
-fill_skale:
+freq_scale:
 	movwf		COUNT4
 	clrf		REG036
 L_0564:
@@ -1295,12 +1293,12 @@ mode_prev:
 	movwf		MODE_NUM
 	return
 ;*******************************************************************************
-invertor:
+mute_on_off:
 	decfsz		MUTE_REG,W
-	    goto	not_ZERO
+	    goto	mute_on
 	clrf		MUTE_REG
 	return	
-not_ZERO:
+mute_on:
 	clrf		MUTE_REG
 	incf		MUTE_REG,F
 	return
