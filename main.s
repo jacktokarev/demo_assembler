@@ -359,16 +359,19 @@ L_00DC:
 	xorlw		0x03		;b'0000 0011',' ',.03
 	btfsc		ZERO
 	    goto	L_00D9
+;*******************************************************************************
 L_0104:
 	clrf		REG024
 	call		print_mode
-	movlw		0xFF		;b'1111 1111','я',.255
-	movwf		REG020
 	movlw		0x04		;b'0000 0100',' ',.04
 	movwf		REG021
 	movlw		0xFF		;b'1111 1111','я',.255
+	movwf		REG020
 	movwf		REG022
 	movwf		REG023
+
+;	movlw		0xFF		;b'1111 1111','я',.255
+
 L_010D:
 	movf		REG021,W
 	iorwf		REG020,W
@@ -489,17 +492,17 @@ enc_state:
 	movf		TMP_ENC_A,W	; сохранить текущее значение 
 	movwf		ENC_OLD_A	; на выводе А энкодера
 ;*******************************************************************************
-; Проврка прерывания по TMR0
+; Проврка прерывания по TMR0 (irrc)
 int_tmr:
 	movlw		0x01		;b'0000 0001',' ',.01
 	btfss		T0IF
-	    andlw	0x00		;b'0000 0000',' ',.00
+	    andlw	0x00		; нет прерывания по TMR0
 	btfss		T0IE
-	    andlw	0x00		;b'0000 0000',' ',.00
-	iorlw		0x00		;b'0000 0000',' ',.00
+	    andlw	0x00		; рерывание по TMR0 запрещено
+	iorlw		0x00		; для проверки на 0
 	btfsc		ZERO
-	    goto	int_end		;
-	bcf			T0IF
+	    goto	int_end		; не требуется интерпритация irrc
+	bcf			T0IF		; сброс флага прерывания по TMR0
 ;*******************************************************************************
 ; Опрос ДУ
 	clrf		REG078
@@ -510,7 +513,7 @@ L_01DD:
 	movlw		0xA0		;b'1010 0000',' ',.160
 	movwf		REG07B
 	clrf		REG07C
-L_01E0:
+ir_st_p:
 	movlw		0x01		;b'0000 0001',' ',.01
 	subwf		REG07B,F
 	btfss		CARRY
@@ -519,16 +522,15 @@ L_01E0:
 	btfsc		ZERO
 	    incf	REG07C,W
 	btfss		ZERO
-	    goto	L_01E0
+	    goto	ir_st_p
 	bcf			CARRY
-	bcf			RP0
-	bcf			RP1
-	btfsc		RA4
-	    bsf		CARRY
-	movlw		0x00		;b'0000 0000',' ',.00
+	BANKSEL		IRRC_PORT
+	btfsc		IRRC
+	    bsf		CARRY		; копируем состояние IR приемника в CARRY
+	movlw		0x00		;
 	btfsc		CARRY
-	    movlw	0x01		;b'0000 0001',' ',.01
-	movwf		REG070
+	    movlw	0x01		; затем в BIT0 регистра W
+	movwf		REG070		; запоминаем
 	clrf		REG071
 	movf		REG079,W
 	movwf		REG073
@@ -546,7 +548,7 @@ L_01E0:
 	addwf		REG073,W
 	movwf		REG079
 	movlw		0x00		;b'0000 0000',' ',.00
-	btfsc		RA4
+	btfsc		IRRC
 	    movlw	0x01		;b'0000 0001',' ',.01
 	movwf		REG076
 	movlw		0x32		;b'0011 0010','2',.50
@@ -563,7 +565,7 @@ L_0209:
 	movlw		0x00		;b'0000 0000',' ',.00
 	btfss		CARRY
 	    decf	REG07C,F
-	btfsc		RA4
+	btfsc		IRRC
 	    movlw	0x01		;b'0000 0001',' ',.01
 	xorwf		REG076,W
 	btfsc		ZERO
@@ -751,19 +753,6 @@ preamp_on:
 	incf		PAMP_TMP,F
 	return
 ;*******************************************************************************
-channel_wheel:
-	movf		REG021,W
-	iorwf		REG020,W
-	btfsc		ZERO
-	    incf	CNL_TMP,F
-	movlw		0x04		;b'0000 0100',' ',.04
-	subwf		CNL_TMP,W
-	btfss		CARRY
-	    return	
-	clrf		CNL_TMP
-	incf		CNL_TMP,F
-	return
-;*******************************************************************************
 encoder_plus:
 	movf		MODE_NUM,W
 	xorlw		0x01		;b'0000 0001',' ',.01
@@ -783,8 +772,20 @@ encoder_plus:
 	    goto	preamp_on
 	xorlw		0x03		;b'0000 0011',' ',.03
 	btfss		ZERO
+	    return
+;*******************************************************************************
+channel_wheel:
+	movf		REG021,W
+	iorwf		REG020,W
+	btfsc		ZERO
+	    incf	CNL_TMP,F
+	movlw		0x04		;b'0000 0100',' ',.04
+	subwf		CNL_TMP,W
+	btfss		CARRY
 	    return	
-	goto		channel_wheel
+	clrf		CNL_TMP
+	incf		CNL_TMP,F
+	return
 ;*******************************************************************************
 volume_minus:
 	decfsz		VOL_TMP,F
@@ -818,18 +819,6 @@ preamp_off:
 	clrf		PAMP_TMP
 	return
 ;*******************************************************************************
-chanel_wheel_left:
-	movf		REG021,W
-	iorwf		REG020,W
-	btfsc		ZERO
-	    decf	CNL_TMP,F
-	movf		CNL_TMP,F
-	btfss		ZERO
-	    return	
-	movlw		0x03		;b'0000 0011',' ',.03
-	movwf		CNL_TMP
-	return
-;*******************************************************************************
 encoder_minus:
 	movf		MODE_NUM,W
 	xorlw		0x01		;b'0000 0001',' ',.01
@@ -850,7 +839,18 @@ encoder_minus:
 	xorlw		0x03		;b'0000 0011',' ',.03
 	btfss		ZERO
 	    return	
-	goto		chanel_wheel_left
+;*******************************************************************************
+chanel_wheel_left:
+	movf		REG021,W
+	iorwf		REG020,W
+	btfsc		ZERO
+	    decf	CNL_TMP,F
+	movf		CNL_TMP,F
+	btfss		ZERO
+	    return	
+	movlw		0x03		;b'0000 0011',' ',.03
+	movwf		CNL_TMP
+	return
 ;*******************************************************************************
 on_off_dev:
 	decfsz		ON_OFF,W
@@ -907,7 +907,7 @@ pause_bl3:
 	    goto	pause_bl3
 	goto		bl_cycle
 cont_on_off:
-	bsf		GIE
+	bsf			GIE
 	return
 ;*******************************************************************************
 to_line_2:
@@ -1068,35 +1068,49 @@ cnl_num:
 ;*******************************************************************************
 bal_scale:
 	movwf		REG036
+	movlw		0x04
+	movwf		TMP_PKG1
+	movf		REG036, W
+	sublw		0x04
+	btfsc		CARRY
+		goto	pr_lt
+	goto		pr_rt
+pr_rt:
+	movlw		0x01
+	subwf		REG036, W
 	call		full_segs
 	movlw		RIGHT?
 	call		_print_smb
+	movf		REG036, W
+	sublw		0x40
+	movwf		TMP_PKG
+	sublw		0x01
+	btfsc		CARRY
+		goto	e_u_l
+pr_lt:
 	movlw		LEFT?
 	call		_print_smb
-	movlw		0x40
-	movwf		TMP_PKG
-	movf		REG036, W
+	movlw		0x01
 	subwf		TMP_PKG, W
 	call		full_segs
 	goto		e_u_l
-;	movf		REG036, W
-;	goto		end_up_line
 ;*******************************************************************************
 vol_scale:
 	movwf		REG036
+	movlw		0x05
+	movwf		TMP_PKG1
+	movf		REG036, W
 	call		full_segs
 	btfsc		ZERO
 		movlw	SPACE?
 	call		_print_smb
 	goto		e_u_l
-;	movf		REG036, W
-;	goto		end_up_line
 ;*******************************************************************************
 freq_scale:
 	movwf		REG036
-REPT	4
-	addwf		REG036, W
-	ENDM
+	movlw		0x01
+	movwf		TMP_PKG1
+	movf		REG036, W
 	call		full_segs
 ;*******************************************************************************
 e_u_l:
@@ -1105,11 +1119,11 @@ e_u_l:
 ;*******************************************************************************
 full_segs:
 	movwf		TMP_PKG
-	movlw		0x05
+	movf		TMP_PKG1, W
 	subwf		TMP_PKG,F
 	btfsc		CARRY
 		goto	full_seg
-	movlw		0x05
+	movf		TMP_PKG1
 	addwf		TMP_PKG, W
 	return
 full_seg:	
@@ -1155,23 +1169,6 @@ clear_LCD:
 	call		_print_smb
 	bsf			CTRL_LCD, RS_LCD
 	return
-;*******************************************************************************
-;L_0554:
-;	movwf		LINE_POS
-;	clrf		TMP_PKG
-;L_0556:
-;	movf		TMP_PKG1,W
-;	btfsc		LINE_POS,0
-;	    addwf	TMP_PKG,F
-;	bcf			CARRY
-;	rlf			TMP_PKG1,F
-;	bcf			CARRY
-;	rrf			LINE_POS,F
-;	movf		LINE_POS,F
-;	btfss		ZERO
-;	    goto	L_0556
-;	movf		TMP_PKG,W
-;	return
 ;*******************************************************************************
 print_mode:
 	call		clear_LCD

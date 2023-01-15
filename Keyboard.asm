@@ -13,7 +13,6 @@ check_key:
 	BANKSEL		KEYS_PORT
 	btfsc		MUTE_KEY
 		goto	check_next
-;	clrf		PRESSED_KEY
 	incf		PRESSED_KEY,F		; 01 - MUTE
 check_next:
 	BANKSEL		TS_KEYS_PORT
