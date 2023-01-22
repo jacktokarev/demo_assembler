@@ -2,7 +2,7 @@
 
 ; Внешние переменные
 
-	EXTRN	_pause, _TIME_LOW, _TIME_MIDLE, _TIME_HIEGHT	;
+	EXTRN	pause, TIME_M, TIME_H	;
 
 ;*******************************************************************************
 

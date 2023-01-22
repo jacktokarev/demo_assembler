@@ -5,7 +5,7 @@
 #include	"Keyboard.inc"
 #include	"Irrc.inc"
 	
-	EXTRN	_init_lcd, _print_smb, p1562mks, set_DDRAM_ADDR, space_line_LCD
+	EXTRN	_init_lcd, _print_smb, p1545us, set_DDRAM_ADDR, space_line_LCD
 	EXTRN	LINE_NUM, LINE_POS
 
 	EXTRN	_short_pause

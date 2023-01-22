@@ -1162,7 +1162,7 @@ clear_LCD:
 	bcf			CTRL_LCD, RS_LCD
 	movlw		CLRDISP
 	call		_print_smb	;
-	call		p1562mks
+	call		p1545us
 	movlw		DDRADDR|0x00
 	call		_print_smb
 	bsf			CTRL_LCD, RS_LCD

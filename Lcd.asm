@@ -11,19 +11,9 @@ LINE_NUM:		DS	1		;
 LINE_POS:		DS	1		;
 
 ;*******************************************************************************
-
-;******** Вывод символа ********************************************************
-PRT_SMB	MACRO	    SMB			;
-    MOVLW	    SMB
-    MOVWF	    _PKG_LCD
-    CALL	    _send_lcd
-    CALL	    p39mks
-ENDM
-
-;*******************************************************************************
 PSECT	code 
 _init_lcd:	; инициализация ЖКИ
-    BANKSEL	    TS_CTRL_LCD		;
+    BANKSEL	    TS_CTRL_LCD			;
     BCF		    TS_CTRL_LCD, RS_LCD	;
     BCF		    TS_CTRL_LCD, RW_LCD	;
     BCF		    TS_CTRL_LCD, E_LCD	;
@@ -35,12 +25,12 @@ _init_lcd:	; инициализация ЖКИ
 	
 	BCF			TS_DATA_LCD, LCD_LED_POSN
 
-    BANKSEL	    PORTA		;
+    BANKSEL	    CTRL_LCD			;
     BCF		    _LCD_FLAGS, LPKGH	;
 
 ;*******************************************************************************
 ; инициализация
-    CALL	    p21483mks		; пауза после подачи питания
+    CALL	    p20000us		; пауза после подачи питания
     MOVLW	    FUNCSET|FUNCSETDL	; восьмипроводный режим 
     MOVWF	    _PKG_LCD		;
     BCF		    CTRL_LCD, RS_LCD	;
@@ -48,18 +38,18 @@ _init_lcd:	; инициализация ЖКИ
     CALL	    pkg_in_port		;
     CALL	    pkg_in_port		;
 REPT		    3			;
-    CALL	    p39mks		; пауза более 100 мкс
+    CALL	    p40us		; пауза более 100 мкс
     ENDM				;
     CALL	    pkg_in_port		;
-    CALL	    p39mks		;
+    CALL	    p40us		;
     MOVLW	    FUNCSET		;  четырехпроводный режим
     MOVWF	    _PKG_LCD		;
     CALL	    pkg_in_port		; далее работаем в четырехпроводном
-    CALL	    p39mks		; режиме
+    CALL	    p40us		; режиме
  ; настройка функций ЖКИ
     MOVLW	    FUNCSET|FUNCSETN;|FUNCSETF	;
-;    MOVWF	    _PKG_LCD		; двухстрочный режим
-    CALL	    _print_smb		;
+;    MOVWF	    _PKG_LCD		;
+    CALL	    _print_smb		; двухстрочный режим
 
 ;******** Продолжение инициализации DISPLAY ON/OFF MODE ************************
     MOVLW	    DISPCTRL|DISPCTRLD;|DISPCTRLC|DISPCTRLB;
@@ -72,7 +62,7 @@ REPT		    3			;
     CALL	    _send_lcd		; запись в порт
 
 ;******** Пауза более 1,53 мс **************************************************
-    CALL	    p1562mks		;
+    CALL	    p1545us		;
 
 ;******** Продолжение инициализации ENTRY MODE SET *****************************
     MOVLW	    EMSET|EMSETID	;
@@ -83,15 +73,13 @@ REPT		    3			;
     RETURN
 
 ;*******************************************************************************
-;*******************************************************************************
 _print_smb:
 	BANKSEL		_PKG_LCD
 	MOVWF		_PKG_LCD
 ;******** Вывод информации *****************************************************
     CALL	    _send_lcd
-	goto		p39mks
+	goto		p40us
 
-;*******************************************************************************
 ;*******************************************************************************
 _send_lcd:
     BSF		    _LCD_FLAGS, LPKGH	; поднимаем флаг работы со старшим п-б
@@ -124,11 +112,13 @@ _shift_lcd:				;
     BCF		    CTRL_LCD, RS_LCD	; поднимаем флаг передачи команды
     BTFSC	    _LCD_FLAGS,	LSHLR	; проверка флага направления сдвига
 	GOTO	    shift_left		;
-    PRT_SMB	    CDSHIFT|CDSHIFTSC|CDSHIFTRL	; сдвиг видимого окна  вправо
+    movlw	    CDSHIFT|CDSHIFTSC|CDSHIFTRL	; сдвиг видимого окна  вправо
+	call		_print_smb
 shift_left:
     BTFSS	    _LCD_FLAGS, LSHLR	; проверка флага направления сдвига
 	GOTO	    shifted		;
-    PRT_SMB	    CDSHIFT|CDSHIFTSC	; сдвиг видимосго окна влево
+    movlw	    CDSHIFT|CDSHIFTSC	; сдвиг видимосго окна влево
+	call		_print_smb
 shifted:	
     BSF		    CTRL_LCD, RS_LCD	; сброс флага передачи команды
     RETURN
@@ -199,24 +189,19 @@ sp_to_position:
 	bsf			CTRL_LCD, RS_LCD
 	return
 ;*******************************************************************************
-p21483mks:
-    MOVLW	    16			;
-    MOVWF	    _TIME_HIEGHT	;
-    MOVWF	    _TIME_MIDLE		;
-    MOVWF	    _TIME_LOW		;
-    GOTO	    _pause		;
-p1562mks:
-    CLRF	    _TIME_LOW		;
-    MOVLW	    30			;
-    MOVWF	    _TIME_HIEGHT	;
-    MOVWF	    _TIME_MIDLE		;
-    GOTO	    _pause		;		
-p39mks:	
-    CLRF	    _TIME_HIEGHT	;
-    CLRF	    _TIME_MIDLE		;
-    MOVLW	    3			;		
-    MOVWF	    _TIME_LOW		;
-    GOTO	    _pause		;
+p20000us:
+	movlw		15					;
+	movwf		TIME_M				;
+	movlw		156
+	goto		pause				;
+p1545us:
+	movlw		1					;
+	movwf		TIME_M				;
+	movlw		52					;
+	goto		pause				;		
+p40us:
+	movlw		4					;
+	goto		pause				;
 
 ;*******************************************************************************
 ;*******************************************************************************
@@ -226,7 +211,7 @@ p39mks:
     GLOBAL	    _shift_lcd		;
     GLOBAL	    _LCD_FLAGS, _PKG_LCD, LINE_NUM, LINE_POS;
 	GLOBAL		set_DDRAM_ADDR, space_line_LCD
-    GLOBAL	    p1562mks		;
+    GLOBAL	    p1545us		;
 ;*******************************************************************************
 
     END
