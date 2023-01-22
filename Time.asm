@@ -1,38 +1,43 @@
 #include		"Time.inc"
-PSECT	code
 
-;******** Процедура заданной паузы *********************************************
-_pause:
-;t= (_TIME_HIEGHT+1)*(5+((TIME_MIDLE+1)*(6+(TIME_LOW+1)*4)))+7 мкс
+;*******************************************************************************
+PSECT			udata_bank0
+;*******************************************************************************			
+TIME_L:			DS		1		; счетчик циклов первого порядка
+TIME_M:			DS		1		; счетчик циклов второго порядка
+TIME_H:			DS		1		; счетчик циклов третьего порядка
 
-    MOVF	_TIME_HIEGHT, W		; загружаем число циклов третьего
-    MOVWF	TM_COUNT_HIEGHT		; порядка в счетчик циклов 3-го пор.
-    INCF	TM_COUNT_HIEGHT, F	; плюс 1 для единственного прохода при 0
-tim1:
-    MOVF	_TIME_MIDLE, W		; то же для
-    MOVWF	TM_COUNT_MIDLE		; счетчика второго
-    INCF	TM_COUNT_MIDLE, F	; порядка
-tim2:
-    MOVF	_TIME_LOW, W		; тоже для
-    MOVWF	TM_COUNT_LOW		; счетчика первого
-    INCF	TM_COUNT_LOW, F		; порядка
-    NOP					;
-tim3:		
-    NOP					; простой 3 маш. цикла
-    NOP					;
-    DECFSZ	TM_COUNT_LOW, F		; 
-	GOTO	tim3			;
-    DECFSZ	TM_COUNT_MIDLE, F	;
-	GOTO	tim2			;
-    DECFSZ	TM_COUNT_HIEGHT, F	;
-	GOTO	tim1			;
-    RETURN				;
+;*******************************************************************************
+PSECT			code
+;*******************************************************************************	
+pause:
+;	(TIME_H*326405)+(TIME_M*1280)+(TIME_L*5)+20
+;	использование: перед вызовом устанавливаем регистры TIME_H и TIME_M (опцио- 
+;	нально, по умолчанию - 0), в аккамуляторе значение для TIME_L
+	movwf		TIME_L			;
+pause_1:						;
+	movlw		0x01			;
+	subwf		TIME_L,F		;
+	btfsc		CARRY			;
+		goto	pause_1			;
+	nop
+	subwf		TIME_M, F		;
+	btfsc		CARRY			;
+		goto	pause_1			;
+	nop
+	subwf		TIME_H, F		;
+	btfsc		CARRY			;
+		goto	pause_1
+	clrf		TIME_L			;
+	clrf		TIME_M			;
+	clrf		TIME_H			;
+	return
 	
 _short_pause:
 	nop		
 	nop		
-	return
-
-    GLOBAL	_pause, _short_pause;
+	return		
+	GLOBAL		pause, _short_pause;
+	GLOBAL		TIME_M, TIME_H	;
 
     END					;
