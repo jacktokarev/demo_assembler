@@ -22,7 +22,7 @@ REG020:		DS	1	;		equ	020h
 REG021:		DS	1	;		equ	021h
 REG022:		DS	1	;		equ	022h
 REG023:		DS	1	;		equ	023h
-REG024:		DS	1	;		equ	024h
+IRRC_COM:		DS	1	;		equ	024h
 BAL_TMP:	DS	1	;		equ	025h
 BASS_TMP:	DS	1	;		equ	026h
 CNL_TMP:	DS	1	;		equ	027h
@@ -213,7 +213,7 @@ in_mode:
 	movwf		COUNT1
 	movlw		0x8F		;b'1000 1111','Џ',.143
 	movwf		COUNT2
-L_008B:
+pause_mode:
 	movlw		0x01		;b'0000 0001',' ',.01
 	subwf		COUNT1,F
 	movlw		0x00		;b'0000 0000',' ',.00
@@ -224,7 +224,7 @@ L_008B:
 	btfsc		ZERO
 	    incf	COUNT2,W
 	btfss		ZERO
-	    goto	L_008B
+	    goto	pause_mode
 ;*******************************************************************************
 read_enc:
 	decfsz		ENC_ACTIV,W
@@ -243,10 +243,10 @@ e_n:
 	call		to_line_2
 ;*******************************************************************************
 decode_irrc:
-	movf		REG024,W
+	movf		IRRC_COM,W
 	btfsc		ZERO
-	    goto	L_010D
-	movf		REG024,W
+	    goto	p_to_v_mode
+	movf		IRRC_COM,W
 	xorlw		0x0C		;b'0000 1100',' ',.12
 	btfss		ZERO
 	    goto	L_00AE
@@ -259,11 +259,11 @@ L_00AE:
 	movf		ON_OFF,F
 	btfsc		ZERO
 	    goto	L_00DC
-	goto		L_0104
+	goto		auto_vol_mode
 L_00B2:
 	clrf		CNL_TMP
 	incf		CNL_TMP,F
-	goto		L_0104
+	goto		auto_vol_mode
 L_00B5:
 	movlw		0x02		;b'0000 0010',' ',.02
 	goto		L_00B8
@@ -271,38 +271,38 @@ L_00B7:
 	movlw		0x03		;b'0000 0011',' ',.03
 L_00B8:
 	movwf		CNL_TMP
-	goto		L_0104
+	goto		auto_vol_mode
 L_00BA:
 	movf		REG021,W
 	iorwf		REG020,W
 	btfss		ZERO
-	    goto	L_0104
+	    goto	auto_vol_mode
 	call		mute_on_off
-	goto		L_0104
+	goto		auto_vol_mode
 L_00C0:
 	movf		REG021,W
 	iorwf		REG020,W
 	btfss		ZERO
-	    goto	L_0104
+	    goto	auto_vol_mode
 	call		mode_next
-	goto		L_0104
+	goto		auto_vol_mode
 L_00C6:
 	movf		REG021,W
 	iorwf		REG020,W
 	btfss		ZERO
-	    goto	L_0104
+	    goto	auto_vol_mode
 	call		mode_prev
-	goto		L_0104
+	goto		auto_vol_mode
 L_00CC:
 	call		encoder_minus
-	goto		L_0104
+	goto		auto_vol_mode
 L_00CE:
 	call		encoder_plus
-	goto		L_0104
+	goto		auto_vol_mode
 L_00D0:
 	clrf		MODE_NUM
 	incf		MODE_NUM,F
-	goto		L_0104
+	goto		auto_vol_mode
 L_00D3:
 	movlw		0x02		;b'0000 0010',' ',.02
 	goto		L_00DA
@@ -316,10 +316,10 @@ L_00D9:
 	movlw		0x05		;b'0000 0101',' ',.05
 L_00DA:
 	movwf		MODE_NUM
-	goto		L_0104
+	goto		auto_vol_mode
 ;*******************************************************************************
 L_00DC:
-	movf		REG024,W
+	movf		IRRC_COM,W
 	xorlw		0x01		;b'0000 0001',' ',.01
 	btfsc		ZERO
 	    goto	L_00B2
@@ -360,8 +360,9 @@ L_00DC:
 	btfsc		ZERO
 	    goto	L_00D9
 ;*******************************************************************************
-L_0104:
-	clrf		REG024
+; Автоматический переход в режим регулировки громкости
+auto_vol_mode:
+	clrf		IRRC_COM
 	call		print_mode
 	movlw		0x04		;b'0000 0100',' ',.04
 	movwf		REG021
@@ -369,10 +370,7 @@ L_0104:
 	movwf		REG020
 	movwf		REG022
 	movwf		REG023
-
-;	movlw		0xFF		;b'1111 1111','я',.255
-
-L_010D:
+p_to_v_mode:
 	movf		REG021,W
 	iorwf		REG020,W
 	btfsc		ZERO
@@ -387,17 +385,17 @@ L_0117:
 	movf		REG023,W
 	iorwf		REG022,W
 	btfsc		ZERO
-	    goto	L_0124
+	    goto	in_vol_mode
 	movf		MODE_NUM,W
 	btfsc		ZERO
-	    goto	L_0124
+	    goto	in_vol_mode
 	movlw		0x01		;b'0000 0001',' ',.01
 	subwf		REG022,F
 	movlw		0x00		;b'0000 0000',' ',.00
 	btfss		CARRY
 	    decf	REG023,F
 	subwf		REG023,F
-L_0124:
+in_vol_mode:
 	decf		REG022,W
 	iorwf		REG023,W
 	btfss		ZERO
@@ -498,7 +496,7 @@ int_tmr:
 	btfss		T0IF
 	    andlw	0x00		; нет прерывания по TMR0
 	btfss		T0IE
-	    andlw	0x00		; рерывание по TMR0 запрещено
+	    andlw	0x00		; прерывание по TMR0 запрещено
 	iorlw		0x00		; для проверки на 0
 	btfsc		ZERO
 	    goto	int_end		; не требуется интерпритация irrc
@@ -508,8 +506,8 @@ int_tmr:
 	clrf		REG078
 	incf		REG078,F
 	clrf		REG079
-	clrf		REG07A
-L_01DD:
+	clrf		REG07A		; счетчик принятых бит в пакете
+ir_read_bit:
 	movlw		0xA0		;b'1010 0000',' ',.160
 	movwf		REG07B
 	clrf		REG07C
@@ -577,11 +575,11 @@ L_0219:
 	movlw		0x0D		;b'0000 1101',' ',.13
 	subwf		REG07A,W
 	btfss		CARRY
-	    goto	L_01DD
+	    goto	ir_read_bit
 	movf		REG078,W
-	movwf		REG024
+	movwf		IRRC_COM
 	movlw		0x3F		;b'0011 1111','?',.63
-	andwf		REG024,F
+	andwf		IRRC_COM,F	; выделяем команду из принятого пакета
 	movlw		0xFF		;b'1111 1111','я',.255
 	movwf		TMR0
 ;*******************************************************************************
