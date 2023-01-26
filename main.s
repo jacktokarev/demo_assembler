@@ -37,7 +37,7 @@ TMP_PKG1:	DS	1	;		equ	030h
 TMP_PKG:	DS	1	;		equ	031h
 COUNT3:		DS	1	;		equ	034h
 COUNT4:		DS	1	;		equ	035h
-REG036:		DS	1	;		equ	036h
+LEVEL_REG:		DS	1	;		equ	036h
 REG037:		DS	1	;		equ	037h
 COUNT1:		DS	1	;		equ	038h
 COUNT2:		DS	1	;		equ	039h
@@ -130,7 +130,7 @@ start:
 	movwf		ON_OFF
 	clrf		STATUS
 	call		init_ports	; настойка портов
-	call		_init_lcd
+	call		init_lcd
 	call		_init_iic
 	call		_init_encoder
 	call		fill_CGRAM	; запись своих символов в CGRAM
@@ -599,13 +599,13 @@ int_end:
 ; номера каналов
 BYTE_CGRAM  MACRO	BT
 	movlw		BT
-	call		_print_smb
+	call		print_lcd
 	ENDM
 	
 fill_CGRAM:
-	bcf			CTRL_LCD, RS_LCD
+	bcf			RS_L
 	BYTE_CGRAM	CGRADDR|0x00
-	bsf			CTRL_LCD, RS_LCD
+	bsf			RS_L
 IRP	BT, 0x01, 0x03, 0x1D, 0x15, 0x1D, 0x03, 0x01, 0x00 
 	BYTE_CGRAM	BT
 	ENDM
@@ -937,7 +937,7 @@ pamp_mode:
 	call		set_DDRAM_ADDR
 	movf		PAMP_TMP,W
 	addlw		_0?			; '0'
-	call		_print_smb
+	call		print_lcd
 	goto		iic_msg
 cnl_mode:
 	movlw		0x10		;b'0001 0000',' ',.16
@@ -946,7 +946,7 @@ cnl_mode:
 	call		set_DDRAM_ADDR
 	movf		CNL_TMP,W
 	addlw		0x04		;b'0000 0100',' ',.04
-	call		_print_smb
+	call		print_lcd
 	goto		iic_msg
 ;*******************************************************************************
 select_mode:
@@ -976,11 +976,11 @@ print_word_from_EEPROM:
 	clrf		COUNT3
 	clrf		LINE_NUM
 simbol_counter:
-	movf		LINE_POS,W
-	xorwf		COUNT3,W
+	movf		LINE_POS, W
+	xorwf		COUNT3, W
 	btfsc		ZERO
 	    goto	end_phrase
-	movf		LINE_NUM,W
+	movf		LINE_NUM, W
 	BANKSEL		EEADR
 	movwf		EEADR
 	bsf			EECON1,0
@@ -999,7 +999,7 @@ print_word:
 	movwf		EEADR
 	bsf			EECON1,0
 	movf		EEDATA,W
-	call		_print_smb
+	call		print_lcd
 	incf		LINE_NUM,F
 	movf		LINE_NUM,W
 	BANKSEL		EEADR
@@ -1038,10 +1038,10 @@ tens_counter:
 units:
 	movf		LINE_NUM,W
 	addwf		LINE_POS,F
-	bcf			CTRL_LCD, RS_LCD
+	bcf			RS_L
 	movlw		DDRADDR|0x0B
-	call		_print_smb
-	bsf			CTRL_LCD, RS_LCD
+	call		print_lcd
+	bsf			RS_L
 	movf		COUNT3,W
 	xorlw		_0?			; '0'
 	btfss		ZERO
@@ -1050,38 +1050,38 @@ units:
 	movwf		COUNT3
 print_units:
 	movf		COUNT3,W	; число десятков (пробел при ноле)
-	call		_print_smb
+	call		print_lcd
 	movf		LINE_POS,W	; единицы
-	call		_print_smb
+	call		print_lcd
 	movlw		SPACE?		; пробел
-	call		_print_smb
+	call		print_lcd
 	movlw		0x00		; символ динамика
-	call		_print_smb
+	call		print_lcd
 	decfsz		MUTE_REG,W
 	    goto	cnl_num
 	movlw		x?			; включено приглушение (MUTE)
-	goto		_print_smb	;
+	goto		print_lcd	;
 cnl_num:
 	movf		CNL_TMP,W
 	addlw		0x04		; символ номера канала
-	goto		_print_smb
+	goto		print_lcd
 ;*******************************************************************************
 bal_scale:
-	movwf		REG036
-	movlw		0x04
+	movwf		LEVEL_REG
+	movlw		0x04			; вес полного сегмента шкалы
 	movwf		TMP_PKG1
-	movf		REG036, W
+	movf		LEVEL_REG, W
 	sublw		0x04
 	btfsc		CARRY
 		goto	pr_lt
 	goto		pr_rt
 pr_rt:
 	movlw		0x01
-	subwf		REG036, W
+	subwf		LEVEL_REG, W
 	call		full_segs
 	movlw		RIGHT?
-	call		_print_smb
-	movf		REG036, W
+	call		print_lcd
+	movf		LEVEL_REG, W
 	sublw		0x40
 	movwf		TMP_PKG
 	sublw		0x01
@@ -1089,46 +1089,49 @@ pr_rt:
 		goto	e_u_l
 pr_lt:
 	movlw		LEFT?
-	call		_print_smb
+	call		print_lcd
 	movlw		0x01
 	subwf		TMP_PKG, W
 	call		full_segs
 	goto		e_u_l
 ;*******************************************************************************
 vol_scale:
-	movwf		REG036
-	movlw		0x05
+	movwf		LEVEL_REG
+	movlw		0x05			; вес полного сегмента шкалы
 	movwf		TMP_PKG1
-	movf		REG036, W
+	movf		LEVEL_REG, W
 	call		full_segs
 	btfsc		ZERO
 		movlw	SPACE?
-	call		_print_smb
+	call		print_lcd
 	goto		e_u_l
 ;*******************************************************************************
 freq_scale:
-	movwf		REG036
+	movwf		LEVEL_REG
 	movlw		0x01
 	movwf		TMP_PKG1
-	movf		REG036, W
+	movf		LEVEL_REG, W
 	call		full_segs
 ;*******************************************************************************
 e_u_l:
-	movf		REG036, W
+	movf		LEVEL_REG, W
 	goto		end_up_line
 ;*******************************************************************************
+; функция заполняет шкалу полными сегментами
+; и возвращает в аккумуляторе остаток
+; на входе: в аккумуляторе значение шкалы, в TMP_PKG1 размер сегмента шкалы
 full_segs:
 	movwf		TMP_PKG
 	movf		TMP_PKG1, W
-	subwf		TMP_PKG,F
+	subwf		TMP_PKG, F
 	btfsc		CARRY
 		goto	full_seg
-	movf		TMP_PKG1
+	movf		TMP_PKG1, W
 	addwf		TMP_PKG, W
 	return
 full_seg:	
 	movlw		0xFF
-	call		_print_smb
+	call		print_lcd
 	goto		full_segs+1
 ;*******************************************************************************
 ; настройка портов
@@ -1160,24 +1163,24 @@ init_ports:
 	bsf			GIE			; разрешить все указанные прерывания
 	return
 ;*******************************************************************************
-clear_LCD:
-	bcf			CTRL_LCD, RS_LCD
-	movlw		CLRDISP
-	call		_print_smb	;
-	call		p1545us
-	movlw		DDRADDR|0x00
-	call		_print_smb
-	bsf			CTRL_LCD, RS_LCD
-	return
+;clear_LCD:
+;	movlw		CLRDISP
+;	bcf			RS_L
+;	call		print_lcd	;
+;	call		p1590us
+;	movlw		DDRADDR|0x00
+;	call		print_lcd
+;	bsf			RS_L
+;	return
 ;*******************************************************************************
 print_mode:
 	call		clear_LCD
 	movf		MODE_NUM,F
 	btfss		ZERO
 		goto	activ_modes
-	movlw		0x05		; режим "ожидание"
-	movwf		LINE_POS	; позиция в строке
-	movlw		0x01		; строка для вывода
+	movlw		5			; позиция первого символа
+	movwf		LINE_POS	; в строке
+	movlw		1			; строка для вывода
 	call		set_DDRAM_ADDR
 activ_modes:
 	movf		MODE_NUM,W
@@ -1187,7 +1190,7 @@ activ_modes:
 ;*******************************************************************************
 clrregs:					;очиситка регистов
 	clrwdt					;сброс сторожевого таймера
-clrrr:						;очистка диапозона регистпров
+clrrr:						;очистка диапозона регистров
 	clrf		INDF
 	incf		FSR,F
 	xorwf		FSR,W

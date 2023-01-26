@@ -40,4 +40,4 @@ _short_pause:
 	GLOBAL		pause, _short_pause;
 	GLOBAL		TIME_M, TIME_H	;
 
-    END					;
+    END							;
