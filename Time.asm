@@ -33,11 +33,13 @@ pause_1:						;
 	clrf		TIME_H			;
 	return
 	
-_short_pause:
+short_pause:
 	nop		
 	nop		
 	return		
-	GLOBAL		pause, _short_pause;
+	GLOBAL		pause
+	GLOBAL		short_pause	;
 	GLOBAL		TIME_M, TIME_H	;
+	GLOBAL		TIME_L			;
 
-    END							;
+	END							;

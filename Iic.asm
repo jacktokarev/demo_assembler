@@ -25,7 +25,7 @@ _iic_send_byte:
 iic_send_bit:
 	movf		BIT_COUNTER,F
 	btfsc		ZERO
-	    goto	_iic_ack_bit; закончена передача байта
+		goto	_iic_ack_bit; закончена передача байта
 	BANKSEL		IIC_DATA
 	decf		BIT_COUNTER,F
 	rlf			IIC_DATA
@@ -44,24 +44,24 @@ _iic_start_condition:
 	bsf			SCL
 	bsf			SDA			; SDA up
 	bsf			SCL			; SCL up
-	call		_short_pause
+	call		short_pause
 	bcf			SDA			; SDA down
-	call		_short_pause
+	call		short_pause
 	bcf			SCL			; SCL down
 	return
 ;*******************************************************************************	
 _iic_pulse_SCL:
-	call		_short_pause
+	call		short_pause
 	BANKSEL		IIC_PORT
 	bsf			SCL
-	call		_short_pause
+	call		short_pause
 	bcf			SCL
 	return
 ;*******************************************************************************
 _iic_ack_bit:
 	BANKSEL		TS_IIC_PORT
 	bsf			TS_IIC_PORT, SDA_POSN
-	call		_short_pause
+	call		short_pause
 	call		_iic_pulse_SCL
 	BANKSEL		TS_IIC_PORT
 	bcf			TS_IIC_PORT, SDA_POSN
@@ -70,9 +70,9 @@ _iic_ack_bit:
 ;*******************************************************************************	
 _iic_stop_condition:
 	BANKSEL		IIC_PORT
-	bsf			SCL		    ; up SCL
-	call		_short_pause
-	bsf			SDA		    ; up SDA
+	bsf			SCL			; up SCL
+	call		short_pause
+	bsf			SDA			; up SDA
 	return
 ;*******************************************************************************	
 GLOBAL	_iic_start_condition, _iic_pulse_SCL, _iic_stop_condition

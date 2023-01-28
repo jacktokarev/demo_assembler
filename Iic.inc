@@ -1,6 +1,6 @@
 #include		"Global.inc"
 
-EXTRN	_short_pause
+EXTRN	short_pause
 
 ; Настройка подключения линий шины I2C к портам микроконтроллера
 IIC_PORT		equ		PORTA
