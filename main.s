@@ -67,17 +67,18 @@ psect	edata
 	DW	T?,r?,e?,b?,l?,e?,0
 	DW	B?,a?,s?,s?,0
 	DW	B?,a?,l?,a?,n?,c?,e?,0
-	DW	P?,r?,e?,a?,m?,p?,l?,i?,f?,e?,r?,0
-	DW	C?,h?,a?,n?,e?,l?,0,0xff
+	DW	G?,a?,i?,n?,0
+	DW	L?,o?,u?,d?,n?,e?,s?,s?,0
+	DW	C?,h?,a?,n?,e?,l?,0
+	DW	0xff,0xff,0xff,0xff,0xff,0xff,0xff
 	DW	0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff
 	DW	0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff
 	DW	0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff
 	DW	0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff
 	DW	0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff
 	DW	0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff
-	DW	0x20,0x53,0x55,0x50,0x45,0x52,0x2d,0x20
-	DW	0x20,0x4e,0x41,0x53,0x54,0x59,0x41,0x20
-	DW	0x0a,0x08,0x0a,0x20,0x00,0x01,0xff,0xff	
+	DW	0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff
+	DW	0x0a,0x08,0x08,0x20,0x10,0x01,0xff,0xff	
 
 
 ;*******************************************************************************
@@ -141,7 +142,6 @@ COPYEEDT	MACRO	FREG
 	call		get_from_EEPROM
 	movwf		FREG
 	ENDM
-	
 	movlw		0x78		; начальный адрес для чтения
 	BANKSEL		EEADR
 	movwf		EEADR
@@ -150,7 +150,7 @@ IRP	FREG, VOL_TMP, TRBL_TMP, BASS_TMP, BAL_TMP, PAMP_TMP, CNL_TMP
 	ENDM
 ;*******************************************************************************
 	call		iic_msg
-	call		print_mode
+	call		mode_print
 ;*******************************************************************************
 read_keys:
 	call		check_key
@@ -202,7 +202,7 @@ other_key:
 		goto	prev_key
 ;*******************************************************************************
 in_mode:
-	call		print_mode
+	call		mode_print
 	movlw		0xFF		;b'1111 1111','я',.255
 	movwf		REG022
 	movwf		REG023
@@ -359,7 +359,7 @@ L_00DC:
 ; Автоматический переход в режим регулировки громкости
 auto_vol_mode:
 	clrf		IRRC_COM
-	call		print_mode
+	call		mode_print
 	movlw		0x04		;b'0000 0100',' ',.04
 	movwf		REG021
 	movlw		0xFF		;b'1111 1111','я',.255
@@ -398,7 +398,7 @@ in_vol_mode:
 		goto	read_keys
 	clrf		MODE_NUM
 	incf		MODE_NUM,F
-	call		print_mode
+	call		mode_print
 ;*******************************************************************************
 ;Сохранение значений регулируемых параметров в EEPROM
 	goto		save_fregs
@@ -676,17 +676,21 @@ send_bal:
 	movf		COUNT3,W
 	addlw		AP_ATT_RR				; аттенюатор правый задний
 	call		_iic_send_byte
-	BANKSEL		CNL_TMP
-	decf		CNL_TMP,W
-	addlw		AP_ASW					; аудио переключатели - канал
+
+	BANKSEL		PAMP_TMP
+	movf		PAMP_TMP, W
+	andlw		00000011B
+	sublw		00000011B
 	movwf		LINE_NUM
-	movf		PAMP_TMP,F
-	btfss		ZERO
-		goto	gain_on					; ! предусиление на полную (+11,25 dB)
-	movlw		AP_ASW_G_0				; аудио переключатели - предусиление
-	addwf		LINE_NUM,F
-gain_on:
-	movf		LINE_NUM,W
+	bcf			CARRY
+REPT	3
+	rlf			LINE_NUM, F				; аудио переключатели - предусиление
+	ENDM
+	btfss		PAMP_TMP, BIT4			;
+		bsf		LINE_NUM, BIT2			; аудио переключатели - тонкомпенсация
+	decf		CNL_TMP,W
+	iorlw		AP_ASW					; аудио переключатели - канал
+	iorwf		LINE_NUM, W
 	call		_iic_send_byte
 	BANKSEL		BASS_TMP
 	movf		BASS_TMP,W
@@ -731,9 +735,16 @@ bass_plus:
 balance_plus:
 	fsr_reg_plus	BAL_TMP, 64
 ;*******************************************************************************
-preamp_on:
-	clrf		PAMP_TMP
-	incf		PAMP_TMP,F
+gain_plus:
+	movf		PAMP_TMP, W
+	andlw		00000011B
+	xorlw		00000011B
+	btfss		ZERO
+		incf		PAMP_TMP, F
+	return
+;*******************************************************************************
+loud_on:
+	bsf			PAMP_TMP, BIT4
 	return
 ;*******************************************************************************
 encoder_plus:
@@ -752,22 +763,25 @@ encoder_plus:
 		goto	balance_plus
 	xorlw		0x01		;b'0000 0001',' ',.01
 	btfsc		ZERO
-		goto	preamp_on
+		goto	gain_plus
 	xorlw		0x03		;b'0000 0011',' ',.03
+	btfsc		ZERO
+		goto	loud_on
+	xorlw		0x01
 	btfss		ZERO
 		return
 ;*******************************************************************************
 channel_wheel:
-	movf		REG021,W
-	iorwf		REG020,W
+	movf		REG021, W
+	iorwf		REG020, W
 	btfsc		ZERO
-		incf	CNL_TMP,F
+		incf	CNL_TMP, F
 	movlw		0x04		;b'0000 0100',' ',.04
 	subwf		CNL_TMP,W
 	btfss		CARRY
 		return	
 	clrf		CNL_TMP
-	incf		CNL_TMP,F
+	incf		CNL_TMP, F
 	return
 ;*******************************************************************************
 fsr_reg_minus	MACRO	REG
@@ -793,9 +807,17 @@ bass_minus:
 ;*******************************************************************************
 balance_minus:
 	fsr_reg_minus	BAL_TMP
+;*******************************************************************************	
+gain_minus:
+	movf		PAMP_TMP, W
+	andlw		00000011B
+	btfsc		ZERO
+		return
+	decf		PAMP_TMP, F
+	return
 ;*******************************************************************************
-preamp_off:
-	clrf		PAMP_TMP
+loud_off:
+	bcf			PAMP_TMP, BIT4
 	return
 ;*******************************************************************************
 encoder_minus:
@@ -814,8 +836,11 @@ encoder_minus:
 		goto	balance_minus
 	xorlw		0x01		;b'0000 0001',' ',.01
 	btfsc		ZERO
-		goto	preamp_off
+		goto	gain_minus
 	xorlw		0x03		;b'0000 0011',' ',.03
+	btfsc		ZERO
+		goto	loud_off
+	xorlw		0x01
 	btfss		ZERO
 		return	
 ;*******************************************************************************
@@ -862,6 +887,7 @@ to_line_2:
 	movlw		0x02		; строка для очистки
 	call		space_line_LCD
 	goto		select_mode
+;*******************************************************************************
 vol_mode:
 	movf		VOL_TMP,W
 	call		vol_scale
@@ -878,13 +904,23 @@ bal_mode:
 	movf		BAL_TMP,W
 	call		bal_scale
 	goto		iic_msg
-pamp_mode:
+gain_mode:
 	movlw		0x10		;b'0001 0000',' ',.16
 	movwf		LINE_POS
 	movlw		0x01		;b'0000 0001',' ',.01
 	call		set_DDRAM_ADDR
 	movf		PAMP_TMP,W
+	andlw		00000011B
 	addlw		_0?			; '0'
+	call		print_lcd
+	goto		iic_msg
+loud_mode:
+	movlw		0x10
+	movwf		LINE_POS
+	call		set_DDRAM_ADDR
+	movlw		_0?
+	btfsc		PAMP_TMP, BIT4
+		addlw	0x01
 	call		print_lcd
 	goto		iic_msg
 cnl_mode:
@@ -913,8 +949,11 @@ select_mode:
 		goto	bal_mode
 	xorlw		0x01		;b'0000 0001',' ',.01
 	btfsc		ZERO
-		goto	pamp_mode
+		goto	gain_mode
 	xorlw		0x03		;b'0000 0011',' ',.03
+	btfsc		ZERO
+		goto	loud_mode
+	xorlw		0x01
 	btfsc		ZERO
 		goto	cnl_mode
 	goto		iic_msg
@@ -1119,7 +1158,7 @@ get_from_EEPROM:
 	BANKSEL		VOL_TMP
 	return
 ;*******************************************************************************
-print_mode:
+mode_print:
 	call		clear_LCD
 	movf		MODE_NUM,F
 	btfss		ZERO
@@ -1146,7 +1185,7 @@ clrrr:						;очистка диапозона регистров
 ;*******************************************************************************
 mode_next:
 	incf		MODE_NUM,F
-	movlw		0x07		;b'0000 0111',' ',.07
+	movlw		0x08
 	subwf		MODE_NUM,W
 	btfss		CARRY
 		return	
@@ -1156,8 +1195,8 @@ mode_next:
 ;*******************************************************************************
 mode_prev:
 	decfsz		MODE_NUM,F
-		return	
-	movlw		0x06		;b'0000 0110',' ',.06
+		return
+	movlw		0x07
 	movwf		MODE_NUM
 	return
 ;*******************************************************************************
