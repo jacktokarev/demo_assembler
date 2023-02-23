@@ -62,6 +62,7 @@ TMP_ENC_A:	DS	1	;		equ	07Dh
 TMP_W:		DS	1	;		equ	07Eh
 	
 psect	edata
+modes:
 	DW	S?,t?,a?,n?,d?,SPACE?,b?,y?,0
 	DW	V?,o?,l?,u?,m?,e?,0
 	DW	T?,r?,e?,b?,l?,e?,0
@@ -70,15 +71,16 @@ psect	edata
 	DW	G?,a?,i?,n?,0
 	DW	L?,o?,u?,d?,n?,e?,s?,s?,0
 	DW	C?,h?,a?,n?,e?,l?,0
-	DW	0xff,0xff,0xff,0xff,0xff,0xff,0xff
-	DW	0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff
-	DW	0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff
-	DW	0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff
-	DW	0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff
-	DW	0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff
-	DW	0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff
-	DW	0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff
-	DW	0x0a,0x08,0x08,0x20,0x10,0x01,0xff,0xff	
+;	DW	0xff,0xff,0xff,0xff,0xff,0xff,0xff
+;	DW	0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff
+;	DW	0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff
+;	DW	0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff
+;	DW	0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff
+;	DW	0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff
+;	DW	0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff
+;	DW	0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff
+parameters:
+	DW	0x09,0x0C,0x08,0x20,0x10,0x01,0xff,0xff	
 
 
 ;*******************************************************************************
@@ -97,29 +99,37 @@ HighInterruptVector:
 	goto		intrpt		; переход на обработку прерывания
 ;*******************************************************************************
 get_freq_shcale:
-	movlw		0x00		;b'0000 0000',' ',.00
+;	movlw		0x00		;b'0000 0000',' ',.00
+	movlw		high(get_freq_shcale)
 	movwf		PCLATH
-	movf		FSR,W
-	incf		FSR,F
-	addwf		PCL,F
-	retlw		0x00		;b'0000 0000',' ',.00
-	retlw		0x00		;b'0000 0000',' ',.00
-	retlw		0x00		;b'0000 0000',' ',.00
-	retlw		0x01		;b'0000 0001',' ',.01
-	retlw		0x02		;b'0000 0010',' ',.02
-	retlw		0x03		;b'0000 0011',' ',.03
-	retlw		0x04		;b'0000 0100',' ',.04
-	retlw		0x05		;b'0000 0101',' ',.05
-	retlw		0x06		;b'0000 0110',' ',.06
-	retlw		0x07		;b'0000 0111',' ',.07
-	retlw		0x0F		;b'0000 1111',' ',.15
-	retlw		0x0E		;b'0000 1110',' ',.14
-	retlw		0x0D		;b'0000 1101',' ',.13
-	retlw		0x0C		;b'0000 1100',' ',.12
-	retlw		0x0B		;b'0000 1011',' ',.11
-	retlw		0x0A		;b'0000 1010',' ',.10
-	retlw		0x09		;b'0000 1001',' ',.09
-	retlw		0x08		;b'0000 1000',' ',.08
+	movf		FSR, W
+	incf		FSR, F
+	addwf		PCL, F
+IRP fsp, 0x00, 0x00, 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07
+	retlw		fsp
+	ENDM
+IRP	fsp, 0x0F, 0x0E, 0x0E, 0x0D, 0x0C, 0x0B, 0x0A, 0x09, 0x08
+	retlw		fsp
+	ENDM
+	
+;	retlw		0x00		;b'0000 0000',' ',.00
+;	retlw		0x00		;b'0000 0000',' ',.00
+;	retlw		0x00		;b'0000 0000',' ',.00
+;	retlw		0x01		;b'0000 0001',' ',.01
+;	retlw		0x02		;b'0000 0010',' ',.02
+;	retlw		0x03		;b'0000 0011',' ',.03
+;	retlw		0x04		;b'0000 0100',' ',.04
+;	retlw		0x05		;b'0000 0101',' ',.05
+;	retlw		0x06		;b'0000 0110',' ',.06
+;	retlw		0x07		;b'0000 0111',' ',.07
+;	retlw		0x0F		;b'0000 1111',' ',.15
+;	retlw		0x0E		;b'0000 1110',' ',.14
+;	retlw		0x0D		;b'0000 1101',' ',.13
+;	retlw		0x0C		;b'0000 1100',' ',.12
+;	retlw		0x0B		;b'0000 1011',' ',.11
+;	retlw		0x0A		;b'0000 1010',' ',.10
+;	retlw		0x09		;b'0000 1001',' ',.09
+;	retlw		0x08		;b'0000 1000',' ',.08
 ;*******************************************************************************
 start:
 	bcf			STATUS,7	; банки 0, 1 при косвенной адресации 
@@ -132,8 +142,8 @@ start:
 	clrf		STATUS
 	call		init_ports	; настойка портов
 	call		init_lcd
-	call		_init_iic
-	call		_init_encoder
+	call		init_iic
+	call		init_encoder
 	call		fill_CGRAM	; запись своих символов в CGRAM
 	call		clear_LCD
 ;*******************************************************************************
@@ -142,7 +152,8 @@ COPYEEDT	MACRO	FREG
 	call		get_from_EEPROM
 	movwf		FREG
 	ENDM
-	movlw		0x78		; начальный адрес для чтения
+	movlw		parameters
+;	movlw		0x78		; начальный адрес для чтения
 	BANKSEL		EEADR
 	movwf		EEADR
 IRP	FREG, VOL_TMP, TRBL_TMP, BASS_TMP, BAL_TMP, PAMP_TMP, CNL_TMP
@@ -430,7 +441,8 @@ save_freg:
 		bsf		GIE
 	return
 save_fregs:
-	movlw		0x78		; адрес первого байта в EEPROM для сохранения 
+	movlw		parameters
+;	movlw		0x78		; адрес первого байта в EEPROM для сохранения 
 	BANKSEL		TMP_PKG
 	movwf		TMP_PKG
 IRP	FREG, VOL_TMP, TRBL_TMP, BASS_TMP, BAL_TMP, PAMP_TMP, CNL_TMP
@@ -630,13 +642,13 @@ IRP	BT, 0x1F, 0x11, 0x1D, 0x19, 0x1D, 0x11, 0x1F, 0x00
 	return
 ;*******************************************************************************
 iic_msg:					; отправка сообщения по шине I2C
-	call		_iic_start_condition	; условие пуск
+	call		iic_start_condition	; условие пуск
 	movlw		SLAVEADDR				; адрес устройства
-	call		_iic_send_byte			; отправка первого байта
+	call		iic_send_byte			; отправка первого байта
 	BANKSEL		VOL_TMP					
 	decf		VOL_TMP,W
 	sublw		AP_VOL_70|AP_VOL_8c75	; уровень громкости
-	call		_iic_send_byte			; отправка по I2C
+	call		iic_send_byte			; отправка по I2C
 	BANKSEL		MUTE_REG
 	decfsz		MUTE_REG,W
 		goto	mute_off				; отключить режим приглушения
@@ -663,19 +675,19 @@ bal_in_right:
 send_bal:
 	movf		COUNT4,W
 	addlw		AP_ATT_LF				; аттенюатор левый передний
-	call		_iic_send_byte
+	call		iic_send_byte
 	BANKSEL		COUNT3
 	movf		COUNT3,W
 	addlw		AP_ATT_RF				; аттенюатор правый передний
-	call		_iic_send_byte
+	call		iic_send_byte
 	BANKSEL		COUNT4
 	movf		COUNT4,W
 	addlw		AP_ATT_LR				; аттенюатор левый задний
-	call		_iic_send_byte
+	call		iic_send_byte
 	BANKSEL		COUNT3
 	movf		COUNT3,W
 	addlw		AP_ATT_RR				; аттенюатор правый задний
-	call		_iic_send_byte
+	call		iic_send_byte
 
 	BANKSEL		PAMP_TMP
 	movf		PAMP_TMP, W
@@ -691,14 +703,14 @@ REPT	3
 	decf		CNL_TMP,W
 	iorlw		AP_ASW					; аудио переключатели - канал
 	iorwf		LINE_NUM, W
-	call		_iic_send_byte
+	call		iic_send_byte
 	BANKSEL		BASS_TMP
 	movf		BASS_TMP,W
 	addlw		0x01
 	movwf		FSR
 	call		get_freq_shcale
 	addlw		AP_FRQ|AP_FRQ_B			; тембр - бас
-	call		_iic_send_byte
+	call		iic_send_byte
 	BANKSEL		TRBL_TMP
 	movf		TRBL_TMP,W
 	addlw		0x01
@@ -706,8 +718,8 @@ REPT	3
 	call		get_freq_shcale
 	addlw		AP_FRQ|AP_FRQ_T			; тембр - высокие
 icc_msg_end:
-	call		_iic_send_byte			; отправка боследнего байта сообщения
-	goto		_iic_stop_condition		; условие стоп
+	call		iic_send_byte			; отправка боследнего байта сообщения
+	goto		iic_stop_condition		; условие стоп
 ;*******************************************************************************
 fsr_reg_plus	MACRO	REG, SCALE_MAX
 	movlw		REG

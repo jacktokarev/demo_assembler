@@ -3,7 +3,7 @@
 psect			code
 
 ;*******************************************************************************
-_init_encoder:
+init_encoder:
 	BANKSEL		TS_ENC_PORT
 	bsf			TS_ENC_PORT, ENC_A_POSN
 	bsf			TS_ENC_PORT, ENC_B_POSN
@@ -12,4 +12,4 @@ _init_encoder:
 ;*******************************************************************************
 
 
-GLOBAL		_init_encoder
+GLOBAL		init_encoder

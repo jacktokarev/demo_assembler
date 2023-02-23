@@ -10,10 +10,10 @@
 
 	EXTRN	pause
 
-	EXTRN	_iic_start_condition, _iic_pulse_SCL, _iic_stop_condition
-	EXTRN	_iic_send_byte, _init_iic
+	EXTRN	iic_start_condition, iic_pulse_SCL, iic_stop_condition
+	EXTRN	iic_send_byte, init_iic
 
-	EXTRN	_init_encoder
+	EXTRN	init_encoder
 
 	EXTRN	PRESSED_KEY
 	EXTRN	check_key

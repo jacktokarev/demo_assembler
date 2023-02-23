@@ -11,13 +11,13 @@ BIT_COUNTER:	DS	1
 psect			code
 
 ;*******************************************************************************
-_init_iic:
+init_iic:
 	BANKSEL		TS_IIC_PORT
 	bcf			TS_IIC_PORT, SDA_POSN
 	bcf			TS_IIC_PORT, SCL_POSN
 	return
 ;*******************************************************************************			
-_iic_send_byte:
+iic_send_byte:
 	BANKSEL		IIC_DATA
 	movwf		IIC_DATA
 	movlw		0x08		;
@@ -36,10 +36,10 @@ iic_send_bit:
 down_SDA:
 	bcf			SDA
 p_SCL:
-	call		_iic_pulse_SCL
+	call		iic_pulse_SCL
 	goto		iic_send_bit
 ;*******************************************************************************
-_iic_start_condition:
+iic_start_condition:
 	BANKSEL		IIC_PORT
 	bsf			SCL
 	bsf			SDA			; SDA up
@@ -50,7 +50,7 @@ _iic_start_condition:
 	bcf			SCL			; SCL down
 	return
 ;*******************************************************************************	
-_iic_pulse_SCL:
+iic_pulse_SCL:
 	call		short_pause
 	BANKSEL		IIC_PORT
 	bsf			SCL
@@ -62,22 +62,22 @@ _iic_ack_bit:
 	BANKSEL		TS_IIC_PORT
 	bsf			TS_IIC_PORT, SDA_POSN
 	call		short_pause
-	call		_iic_pulse_SCL
+	call		iic_pulse_SCL
 	BANKSEL		TS_IIC_PORT
 	bcf			TS_IIC_PORT, SDA_POSN
 	BANKSEL		IIC_PORT
 	return
 ;*******************************************************************************	
-_iic_stop_condition:
+iic_stop_condition:
 	BANKSEL		IIC_PORT
 	bsf			SCL			; up SCL
 	call		short_pause
 	bsf			SDA			; up SDA
 	return
 ;*******************************************************************************	
-GLOBAL	_iic_start_condition, _iic_pulse_SCL, _iic_stop_condition
-GLOBAL	_iic_send_byte
-GLOBAL	_init_iic
+GLOBAL	iic_start_condition, iic_pulse_SCL, iic_stop_condition
+GLOBAL	iic_send_byte
+GLOBAL	init_iic
 
 ;*******************************************************************************	
 	end
