@@ -1,6 +1,6 @@
 #include	<xc.inc>
 #include	"Lcd.inc"
-#include	"TDA7313.inc"
+#include	"TDA7439.inc"
 #include	"Encoder.inc"
 #include	"Keyboard.inc"
 #include	"Irrc.inc"
