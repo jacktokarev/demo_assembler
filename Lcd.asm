@@ -4,214 +4,199 @@
 ; Резервирование памяти
 PSECT udata_bank0			;
 	
-_LCD_FLAGS:	    DS	1		; регистр флагов работы с LCD
-_PKG_LCD:	    DS	1		; пакет для отправки в LCD
+FLAGS_LCD:		DS	1		; регистр флагов работы с LCD
+PKG_LCD:		DS	1		; пакет для отправки в LCD
 	
 LINE_NUM:		DS	1		;
 LINE_POS:		DS	1		;
 
 ;*******************************************************************************
 PSECT	code 
-_init_lcd:	; инициализация ЖКИ
-    BANKSEL	    TS_CTRL_LCD			;
-    BCF		    TS_CTRL_LCD, RS_LCD	;
-    BCF		    TS_CTRL_LCD, RW_LCD	;
-    BCF		    TS_CTRL_LCD, E_LCD	;
+init_lcd:	; инициализация ЖКИ
+	BANKSEL		TS_CTRL_LCD			;
+	bcf			TS_CTRL_LCD, RS_LCD	;
+;	bcf			TS_CTRL_LCD, RW_LCD	;
+	bcf			TS_CTRL_LCD, E_LCD	;
 
-    BCF		    TS_DATA_LCD, DB4_LCD;
-    BCF		    TS_DATA_LCD, DB5_LCD;
-    BCF		    TS_DATA_LCD, DB6_LCD;
-    BCF		    TS_DATA_LCD, DB7_LCD;
+	bcf			TS_DATA_LCD, DB4_LCD;
+	bcf			TS_DATA_LCD, DB5_LCD;
+	bcf			TS_DATA_LCD, DB6_LCD;
+	bcf			TS_DATA_LCD, DB7_LCD;
 	
-	BCF			TS_DATA_LCD, LCD_LED_POSN
+	bcf			TS_DATA_LCD, LCD_LED_POSN
 
-    BANKSEL	    CTRL_LCD			;
-    BCF		    _LCD_FLAGS, LPKGH	;
+	BANKSEL		CTRL_LCD			;
+	bcf			FLAGS_LCD, LPKGH	;
 
 ;*******************************************************************************
 ; инициализация
-    CALL	    p20000us		; пауза после подачи питания
-    MOVLW	    FUNCSET|FUNCSETDL	; восьмипроводный режим 
-    MOVWF	    _PKG_LCD		;
-    BCF		    CTRL_LCD, RS_LCD	;
-    BCF		    CTRL_LCD, RW_LCD	;
-    CALL	    pkg_in_port		;
-    CALL	    pkg_in_port		;
-REPT		    3			;
-    CALL	    p40us		; пауза более 100 мкс
-    ENDM				;
-    CALL	    pkg_in_port		;
-    CALL	    p40us		;
-    MOVLW	    FUNCSET		;  четырехпроводный режим
-    MOVWF	    _PKG_LCD		;
-    CALL	    pkg_in_port		; далее работаем в четырехпроводном
-    CALL	    p40us		; режиме
+	call		p15000us		; пауза после подачи питания
+	movlw		FUNCSET|FUNCSETDL	; восьмипроводный режим 
+	movwf		PKG_LCD		;
+	bcf			RS_L	;
+;	bcf			CTRL_LCD, RW_LCD	;
+	call		pkg_in_port		;
+	call		p4100us
+	call		pkg_in_port		;
+	call		p100us
+	call		pkg_in_port		;
+	call		p40us		;
+	movlw		FUNCSET		;  четырехпроводный режим
+	movwf		PKG_LCD		;
+	call		pkg_in_port		; далее работаем в четырехпроводном
+	call		p40us		; режиме
  ; настройка функций ЖКИ
-    MOVLW	    FUNCSET|FUNCSETN;|FUNCSETF	;
-;    MOVWF	    _PKG_LCD		;
-    CALL	    _print_smb		; двухстрочный режим
+	movlw		FUNCSET|FUNCSETN;|FUNCSETF	;
+	call		print_lcd		; двухстрочный режим
 
 ;******** Продолжение инициализации DISPLAY ON/OFF MODE ************************
-    MOVLW	    DISPCTRL|DISPCTRLD;|DISPCTRLC|DISPCTRLB;
- ;   MOVWF	    _PKG_LCD		; записать это значение в байт сообщения
-    CALL	    _print_smb		; запись в порт
+	movlw		DISPCTRL|DISPCTRLD;|DISPCTRLC|DISPCTRLB;
+	call		print_lcd		; запись в порт
 
 ;******** Продолжение инициализации DISPLAY CLEAR ******************************
-    MOVLW	    CLRDISP		;
-;    MOVWF	    _PKG_LCD		; записать это значение в байт сообщения
-    CALL	    _send_lcd		; запись в порт
+	movlw		CLRDISP		;
+	call		send_lcd		; запись в порт
 
 ;******** Пауза более 1,53 мс **************************************************
-    CALL	    p1545us		;
+	call		p1590us		;
 
 ;******** Продолжение инициализации ENTRY MODE SET *****************************
-    MOVLW	    EMSET|EMSETID	;
-;    MOVWF	    _PKG_LCD		; записать это значение в байт сообщения
-    CALL	    _print_smb		; запись в порт
+	movlw		EMSET|EMSETID	;
+	call		print_lcd		; запись в порт
 
 ;******** Инициализация дисплея закончена **************************************
-    RETURN
+	return
 
 ;*******************************************************************************
-_print_smb:
-	BANKSEL		_PKG_LCD
-	MOVWF		_PKG_LCD
+print_lcd:
+	BANKSEL		PKG_LCD
+	movwf		PKG_LCD
 ;******** Вывод информации *****************************************************
-    CALL	    _send_lcd
+	call		send_lcd
 	goto		p40us
 
 ;*******************************************************************************
-_send_lcd:
-    BSF		    _LCD_FLAGS, LPKGH	; поднимаем флаг работы со старшим п-б
+send_lcd:
+	bsf			FLAGS_LCD, LPKGH	; поднимаем флаг работы со старшим п-б
 pkg_in_port:	; выставление уровней на выводах LCD в соответствии
 		; с данными отсылаемого пакета (полубайт пакета)
-    BCF		    DATA_LCD, DB7_LCD	;
-    BTFSC	    _PKG_LCD, BIT7	;
-		BSF	    DATA_LCD, DB7_LCD	;
-    BCF		    DATA_LCD, DB6_LCD	;
-    BTFSC	    _PKG_LCD, BIT6	;
-		BSF	    DATA_LCD, DB6_LCD	;
-    BCF		    DATA_LCD, DB5_LCD	;
-    BTFSC	    _PKG_LCD, BIT5	;
-		BSF	    DATA_LCD, DB5_LCD	;
-    BCF		    DATA_LCD, DB4_LCD	;
-    BTFSC	    _PKG_LCD, BIT4	;
-		BSF	    DATA_LCD, DB4_LCD	;
+	bcf			DATA_LCD, DB7_LCD	;
+	BTFSC		PKG_LCD, BIT7	;
+		bsf		DATA_LCD, DB7_LCD	;
+	bcf			DATA_LCD, DB6_LCD	;
+	BTFSC		PKG_LCD, BIT6	;
+		bsf		DATA_LCD, DB6_LCD	;
+	bcf			DATA_LCD, DB5_LCD	;
+	BTFSC		PKG_LCD, BIT5	;
+		bsf		DATA_LCD, DB5_LCD	;
+	bcf			DATA_LCD, DB4_LCD	;
+	BTFSC		PKG_LCD, BIT4	;
+		bsf		DATA_LCD, DB4_LCD	;
 
 write_lcd:	; отсылка команды записи данных в LCD
-    BSF		    CTRL_LCD, E_LCD	; синхроимпульс в LCD
-    BCF		    CTRL_LCD, E_LCD	;
-    BTFSS	    _LCD_FLAGS, LPKGH	; пропуск, если передан старший и
-		RETURN				; выход, если передан младший полубайт
-    SWAPF	    _PKG_LCD, F		; смена мест полубайтов
-    BCF		    _LCD_FLAGS, LPKGH	; сброс флага работы со старшим п-байтом
-    GOTO	    pkg_in_port		; младший полубайт в порт
+	bsf			E_L	; синхроимпульс в LCD
+	bcf			E_L	;
+	btfss		FLAGS_LCD, LPKGH	; пропуск, если передан старший и
+		return				; выход, если передан младший полубайт
+	SWAPF		PKG_LCD, F		; смена мест полубайтов
+	bcf			FLAGS_LCD, LPKGH	; сброс флага работы со старшим п-байтом
+	goto		pkg_in_port		; младший полубайт в порт
 
 ;*******************************************************************************
-_shift_lcd:				;
-    BCF		    CTRL_LCD, RS_LCD	; поднимаем флаг передачи команды
-    BTFSC	    _LCD_FLAGS,	LSHLR	; проверка флага направления сдвига
-	GOTO	    shift_left		;
-    movlw	    CDSHIFT|CDSHIFTSC|CDSHIFTRL	; сдвиг видимого окна  вправо
-	call		_print_smb
-shift_left:
-    BTFSS	    _LCD_FLAGS, LSHLR	; проверка флага направления сдвига
-	GOTO	    shifted		;
-    movlw	    CDSHIFT|CDSHIFTSC	; сдвиг видимосго окна влево
-	call		_print_smb
-shifted:	
-    BSF		    CTRL_LCD, RS_LCD	; сброс флага передачи команды
-    RETURN
+;shift_lcd:				;
+;	bcf			RS_L	; поднимаем флаг передачи команды
+;	BTFSC		FLAGS_LCD,	LSHLR	; проверка флага направления сдвига
+;	goto		shift_left		;
+;	movlw		CDSHIFT|CDSHIFTSC|CDSHIFTRL	; сдвиг видимого окна  вправо
+;	call		print_lcd
+;shift_left:
+;	btfss		FLAGS_LCD, LSHLR	; проверка флага направления сдвига
+;	goto		shifted		;
+;	movlw		CDSHIFT|CDSHIFTSC	; сдвиг видимосго окна влево
+;	call		print_lcd
+;shifted:	
+;	bsf			RS_L	; сброс флага передачи команды
+;	return
 
 ;*******************************************************************************
 set_DDRAM_ADDR:
 	movwf		LINE_NUM
-	bcf			CTRL_LCD, RS_LCD
-	decfsz		LINE_NUM,W
-	    goto	line_2_LCD
-	decf		LINE_POS,W
+
+	decf		LINE_POS, W
 	iorlw		DDRADDR|LCD_LINE_ONE
-	call		_print_smb
-line_2_LCD:
-	movf		LINE_NUM,W
-	xorlw		0x02
-	btfss		ZERO
-	    goto	smb_mode
-	decf		LINE_POS,W
-	iorlw		DDRADDR|LCD_LINE_TWO
-	call		_print_smb
-smb_mode:
-	bsf			CTRL_LCD, RS_LCD
+	btfsc		LINE_NUM, BIT1
+		iorlw	LCD_LINE_TWO
+	bcf			RS_L
+	call		print_lcd
+	bsf			RS_L
 	return
+	
+;*******************************************************************************
+clear_LCD:
+	movlw		CLRDISP
+	bcf			RS_L
+	call		print_lcd	;
+	call		p1590us
+	bsf			RS_L
+	return
+
 ;*******************************************************************************
 space_line_LCD:
 	movwf		LINE_POS
-	decfsz		LINE_POS,W
-	    goto	line_2
-	bcf			CTRL_LCD, RS_LCD
 	movlw		DDRADDR|0x00
-	call		_print_smb
-	bsf			CTRL_LCD, RS_LCD    
+	btfsc		LINE_POS, BIT1
+		movlw	DDRADDR|0x40
+	bcf			RS_L
+	call		print_lcd
+	bsf			RS_L
 	clrf		LINE_NUM
-space_to_position:
+next_pos:
 	movlw		SPACE?
-	call		_print_smb
-	incf		LINE_NUM,F
-	movlw		0x10		;b'0001 0000',' ',.16
-	subwf		LINE_NUM,W
+	call		print_lcd
+	incf		LINE_NUM, F
+	movlw		16
+	subwf		LINE_NUM, W
 	btfss		CARRY
-	    goto	space_to_position
-	bcf			CTRL_LCD, RS_LCD
+		goto	next_pos
 	movlw		DDRADDR|0x00
-	call		_print_smb
-	bsf			CTRL_LCD, RS_LCD
-line_2:
-	movf		LINE_POS,W
-	xorlw		0x02		;b'0000 0010',' ',.02
-	btfss		ZERO
-	    return	
-	bcf			CTRL_LCD, RS_LCD
-	movlw		DDRADDR|0x40
-	call		_print_smb
-	bsf			CTRL_LCD, RS_LCD
-	clrf		LINE_NUM
-sp_to_position:
-	movlw		SPACE?
-	call		_print_smb
-	incf		LINE_NUM,F
-	movlw		0x10		;b'0001 0000',' ',.16
-	subwf		LINE_NUM,W
-	btfss		CARRY
-	    goto	sp_to_position
-	bcf			CTRL_LCD, RS_LCD
-	movlw		DDRADDR|0x40
-	call		_print_smb
-	bsf			CTRL_LCD, RS_LCD
+	btfsc		LINE_POS, BIT1
+		movlw	DDRADDR|0x40
+	bcf			RS_L
+	call		print_lcd
+	bsf			RS_L
 	return
+
 ;*******************************************************************************
-p20000us:
-	movlw		15					;
+p15000us:
+	movlw		11					;
 	movwf		TIME_M				;
-	movlw		156
+	movlw		180
 	goto		pause				;
-p1545us:
+p4100us:							;
+	movlw		3					;
+	movwf		TIME_M				;
+	movlw		48					;
+	goto		pause				;
+p1590us:
 	movlw		1					;
 	movwf		TIME_M				;
-	movlw		52					;
-	goto		pause				;		
+	movlw		58					;
+	goto		pause				;
+p100us:
+	movlw		16					;
+	goto		pause				;
 p40us:
 	movlw		4					;
 	goto		pause				;
 
 ;*******************************************************************************
-;*******************************************************************************
-    GLOBAL	    _init_lcd		; инициализация LCD
-    GLOBAL	    _send_lcd		; отправка пакета в LCD
-    GLOBAL	    _print_smb		;
-    GLOBAL	    _shift_lcd		;
-    GLOBAL	    _LCD_FLAGS, _PKG_LCD, LINE_NUM, LINE_POS;
+	GLOBAL		init_lcd		; инициализация LCD
+	GLOBAL		print_lcd		;
+;	GLOBAL		shift_lcd		;
+;	GLOBAL		FLAGS_LCD, PKG_LCD
+	GLOBAL		clear_LCD		;
+	GLOBAL		LINE_NUM, LINE_POS;
 	GLOBAL		set_DDRAM_ADDR, space_line_LCD
-    GLOBAL	    p1545us		;
 ;*******************************************************************************
 
-    END
+	END

@@ -13,10 +13,10 @@ TS_CTRL_LCD	EQU	TRISA		; регистр настройки порта управ
 
 RS_LCD		EQU	PORTA_RA2_POSN	; сигнал RS
 #define		RS_L	BANKMASK(CTRL_LCD), RS_LCD	
-RW_LCD		EQU	PORTA_RA1_POSN	; сигнал RW
-#define		RW_L	BANKMASK(CTRL_LCD), RW_LCD
+;RW_LCD		EQU	PORTA_RA1_POSN	; сигнал RW
+;#define		RW_L	BANKMASK(CTRL_LCD), RW_LCD
 E_LCD		EQU	PORTA_RA3_POSN	; сигнал E
-#define		E_L		BANKMAS(CTRL_LCD), E_LCD
+#define		E_L		BANKMASK(CTRL_LCD), E_LCD
 
 ; Подключение сигналов данных ЖКИ к портам контроллера
 
