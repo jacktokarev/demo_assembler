@@ -150,10 +150,11 @@ COPYEEDT    MACRO   EADR, FREG
 	ENDM
 	COPYEEDT	0x78, VOL_TMP
 	COPYEEDT	0x79, TRBL_TMP
-	COPYEEDT	0x7A, BASS_TMP
-	COPYEEDT	0x7B, BAL_TMP
-	COPYEEDT	0x7C, PAMP_TMP
-	COPYEEDT	0x7D, CNL_TMP
+	COPYEEDT	0x7A, MDL_TMP		;
+	COPYEEDT	0x7B, BASS_TMP
+	COPYEEDT	0x7C, BAL_TMP
+	COPYEEDT	0x7D, PAMP_TMP
+	COPYEEDT	0x7E, CNL_TMP
 ;*******************************************************************************
 	call		iic_msg
 	call		print_mode
