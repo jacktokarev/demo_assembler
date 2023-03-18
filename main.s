@@ -78,7 +78,7 @@ modes:
 	DW	G?,a?,i?,n?,0
 	DW	C?,h?,a?,n?,n?,e?,l?,0
 parameters:
-	DW	0x02,0x0E,0x05,0x08,0x08,0x08,0x10,0xff	
+	DW	0x01,0x0E,0x05,0x08,0x08,0x08,0x10,0xff	
 
 ;*******************************************************************************
 psect ResVect, class=CODE, abs, delta=2
@@ -612,25 +612,22 @@ REPT	8
 	BYTE_CGRAM	0x10	; одна вертикальная полоса слева
 	ENDM
 REPT	8
-	BYTE_CGRAM	0x18	; две вертикальных полосы слева
+	BYTE_CGRAM	0x14	; две через одну вертикальных полосы слева 
 	ENDM
 REPT	8
-	BYTE_CGRAM	0x1C	; три вертикальных полосы слева
-	ENDM
-REPT	8
-	BYTE_CGRAM	0x1E	; четыре вертикальных полосы слева
-	ENDM
-IRP	BT, 0x1F, 0x1B, 0x13, 0x1B, 0x1B, 0x11, 0x1F, 0x00
-	; 3-ий канал
-	BYTE_CGRAM	BT
-	ENDM
-IRP	BT, 0x1F, 0x11, 0x1D, 0x11, 0x17, 0x11, 0x1F, 0x00
-	; 2-ой канал
-	BYTE_CGRAM	BT
+	BYTE_CGRAM	0x15	; три через одну вертикальных полосы слева
 	ENDM
 IRP	BT, 0x1F, 0x11, 0x1D, 0x19, 0x1D, 0x11, 0x1F, 0x00
-	; 1-ый канал
-	BYTE_CGRAM	BT
+	BYTE_CGRAM	BT		; 1-ый канал
+	ENDM
+IRP	BT, 0x1F, 0x11, 0x1D, 0x11, 0x17, 0x11, 0x1F, 0x00
+	BYTE_CGRAM	BT		; 2-ой канал
+	ENDM
+IRP	BT, 0x1F, 0x1B, 0x13, 0x1B, 0x1B, 0x11, 0x1F, 0x00
+	BYTE_CGRAM	BT		; 3-ий канал
+	ENDM
+IRP	BT, 0x1F, 0x15, 0x15, 0x11, 0x1D, 0x1D, 0x1F, 0x00
+	BYTE_CGRAM	BT		; 4-ый канал
 	ENDM
 	return
 ;*******************************************************************************
@@ -741,7 +738,7 @@ channel_wheel:
 	iorwf		REG020, W
 	btfsc		ZERO
 		incf	CNL_TMP, F
-	movlw		0x04		;b'0000 0100',' ',.04
+	movlw		0x05		;
 	subwf		CNL_TMP,W
 	btfss		CARRY
 		return	
@@ -811,7 +808,7 @@ chanel_wheel_left:
 	movf		CNL_TMP,F
 	btfss		ZERO
 		return	
-	movlw		0x03		;b'0000 0011',' ',.03
+	movlw		0x04		; после первого включаем четвертый
 	movwf		CNL_TMP
 	return
 ;*******************************************************************************
@@ -877,7 +874,7 @@ cnl_mode:
 	movlw		0x01		;b'0000 0001',' ',.01
 	call		set_DDRAM_ADDR
 	movf		CNL_TMP,W
-	addlw		0x04		;b'0000 0100',' ',.04
+	addlw		0x03		;
 	call		print_lcd
 	goto		iic_msg
 ;*******************************************************************************
@@ -998,7 +995,7 @@ print_units:
 	goto		print_lcd	;
 cnl_num:
 	movf		CNL_TMP,W
-	addlw		0x04		; символ номера канала
+	addlw		0x03		; символ номера канала
 	goto		print_lcd
 ;*******************************************************************************
 bal_scale:
@@ -1062,7 +1059,7 @@ full_segs:
 	addwf		TMP_PKG, W
 	return
 full_seg:	
-	movlw		0xFF
+	movlw		0x03
 	call		print_lcd
 	goto		full_segs+1
 ;*******************************************************************************
