@@ -1,5 +1,6 @@
 #include "main.inc"
-	
+
+;*******************************************************************************
 ; CONFIG
 CONFIG	FOSC = INTOSCIO		; Oscillator Selection bits (INTOSC oscillator: I/O function on RA6/OSC2/CLKOUT pin, I/O function on RA7/OSC1/CLKIN)
 CONFIG	WDTE = OFF			; Watchdog Timer Enable bit (WDT disabled)
@@ -10,14 +11,14 @@ CONFIG	LVP = OFF			; Low-Voltage Programming Enable bit (RB4/PGM pin has digital
 CONFIG	CPD = OFF			; Data EE Memory Code Protection bit (Data memory code protection off)
 CONFIG	CP = OFF			; Flash Program Memory Code Protection bit (Code protection off)
 
-
-;==========================================================================
+;*******************************************************************************
 ;
 ;		Register Definitions
 ;
-;==========================================================================
+;*******************************************************************************
 ; Used Registers
 psect	udata_bank0
+	
 REG020:		DS	1	;		equ	020h
 REG021:		DS	1	;		equ	021h
 REG022:		DS	1	;		equ	022h
@@ -45,7 +46,9 @@ MUTE_REG:	DS	1	;		equ	03Ah
 ON_OFF:		DS	1	;		equ	03Bh
 MDL_TMP:	DS	1	;
 	
+;*******************************************************************************
 psect		udata_shr
+		
 REG070:		DS	1	;		equ	070h
 REG071:		DS	1	;		equ	071h
 REG072:		DS	1	;		equ	072h
@@ -62,26 +65,20 @@ REG07C:		DS	1	;		equ	07Ch
 TMP_ENC_A:	DS	1	;		equ	07Dh
 TMP_W:		DS	1	;		equ	07Eh
 	
+;*******************************************************************************
 psect	edata
+
 modes:
 	DW	S?,t?,a?,n?,d?,SPACE?,b?,y?,0
 	DW	V?,o?,l?,u?,m?,e?,0
-	DW	T?,r?,e?,b?,l?,e?,0
-	DW	M?,i?,d?,d?,l?,e?,0
 	DW	B?,a?,s?,s?,0
+	DW	M?,i?,d?,d?,l?,e?,0
+	DW	T?,r?,e?,b?,l?,e?,0
 	DW	B?,a?,l?,a?,n?,c?,e?,0
 	DW	G?,a?,i?,n?,0
 	DW	C?,h?,a?,n?,n?,e?,l?,0
-;	DW	0xff,0xff,0xff,0xff,0xff,0xff,0xff
-;	DW	0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff
-;	DW	0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff
-;	DW	0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff
-;	DW	0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff
-;	DW	0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff
-;	DW	0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff
-;	DW	0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff
 parameters:
-	DW	0x09,0x08,0x08,0x08,0x20,0x10,0x01,0xff	
+	DW	0x02,0x0E,0x05,0x08,0x08,0x08,0x10,0xff	
 
 ;*******************************************************************************
 psect ResVect, class=CODE, abs, delta=2
@@ -92,14 +89,13 @@ ResetVector:
 ;*******************************************************************************
 HighInterruptVector:
 	movwf		TMP_W		; сохранить значение аккумулятора
-	movf		STATUS,W	; сохранить
+	movf		STATUS, W	; сохранить
 	movwf		TMP_STATUS	; состояние регистра STATUS
-	movf		PCLATH,W	; сохранить
+	movf		PCLATH, W	; сохранить
 	movwf		TMP_PCLATH	; значение PCLATH
 	goto		intrpt		; переход на обработку прерывания
 ;*******************************************************************************
 get_freq_scale:
-;	movlw		0x00		;b'0000 0000',' ',.00
 	movlw		high(get_freq_scale)
 	movwf		PCLATH
 	movf		FSR, W
@@ -108,7 +104,7 @@ get_freq_scale:
 IRP fsp, 0x00, 0x00, 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07
 	retlw		fsp
 	ENDM
-IRP	fsp, 0x0F, 0x0E, 0x0E, 0x0D, 0x0C, 0x0B, 0x0A, 0x09, 0x08
+IRP	fsp, 0x0F, 0x0E, 0x0D, 0x0C, 0x0B, 0x0A, 0x09, 0x08
 	retlw		fsp
 	ENDM
 	
@@ -153,10 +149,9 @@ COPYEEDT	MACRO	FREG
 	movwf		FREG
 	ENDM
 	movlw		parameters
-;	movlw		0x78		; начальный адрес для чтения
 	BANKSEL		EEADR
 	movwf		EEADR
-IRP	FREG, VOL_TMP, TRBL_TMP, MDL_TMP, BASS_TMP, BAL_TMP, PAMP_TMP, CNL_TMP
+IRP	FREG, CNL_TMP, PAMP_TMP, VOL_TMP, BASS_TMP, MDL_TMP, TRBL_TMP, BAL_TMP
 	COPYEEDT	FREG
 	ENDM
 ;*******************************************************************************
@@ -442,10 +437,9 @@ save_freg:
 	return
 save_fregs:
 	movlw		parameters
-;	movlw		0x78		; адрес первого байта в EEPROM для сохранения 
 	BANKSEL		TMP_PKG
 	movwf		TMP_PKG
-IRP	FREG, VOL_TMP, TRBL_TMP, MDL_TMP, BASS_TMP, BAL_TMP, PAMP_TMP, CNL_TMP
+IRP	FREG, CNL_TMP, PAMP_TMP, VOL_TMP, BASS_TMP, MDL_TMP, TRBL_TMP, BAL_TMP
 	BANKSEL		FSR
 	movlw		FREG
 	movwf		FSR
@@ -454,11 +448,10 @@ IRP	FREG, VOL_TMP, TRBL_TMP, MDL_TMP, BASS_TMP, BAL_TMP, PAMP_TMP, CNL_TMP
 ;*******************************************************************************
 	goto		read_keys
 ;*******************************************************************************
-;*******************************************************************************
 ; обработчик прерываний
 intrpt:
 	movlw		0x01		; 1 в аккумулятор
-	btfss		RBIF		; измеения энкодера
+	btfss		RBIF		; изменения энкодера
 		andlw	0x00		;	нет
 	btfss		RBIE		; прерывания по энкодеру
 		andlw	0x00		;	запрещены
@@ -641,11 +634,10 @@ IRP	BT, 0x1F, 0x11, 0x1D, 0x19, 0x1D, 0x11, 0x1F, 0x00
 	ENDM
 	return
 ;*******************************************************************************
-iic_msg:					; отправка сообщения по шине I2C
-	call		iic_start_condition	; условие пуск
+iic_msg:								; отправка сообщения по шине I2C
+	call		iic_start_condition		; условие пуск
 	movlw		SLAVEADDR				; адрес устройства
 	call		iic_send_byte			; отправка первого байта
-
 	BANKSEL		CNL_TMP
 	movlw		SUBADDRAI|SUBADDRIN
 	call		iic_send_byte
@@ -661,94 +653,29 @@ iic_msg:					; отправка сообщения по шине I2C
 		goto	mute_off
 	movlw		AP_VOLMUTE
 	goto		icc_msg_end
-	
-	
 mute_off:					
 	decf		VOL_TMP,W
 	sublw		AP_VOL40|AP_VOL7		; уровень громкости
 vol_iic:
 	call		iic_send_byte			; отправка по I2C
-;	BANKSEL		MUTE_REG
-; 	decfsz		MUTE_REG, W
-; 		goto	mute_off				; отключить режим приглушения
-; 	movlw		AP_ASW|AP_ASW_CNL_4		; физически отключенный канал
-; 	goto		icc_msg_end				; окончить передачу сообщения
-; mute_off:
-
-	BANKSEL		BASS_TMP
-	movf		BASS_TMP,W
-	addlw		0x01
-	movwf		FSR
-	call		get_freq_scale
-;	addlw		AP_FRQ|AP_FRQ_B			; тембр - бас
-	call		iic_send_byte
-	BANKSEL		MDL_TMP
-	movf		MDL_TMP, W
+IRP PARAM_REG, BASS_TMP, MDL_TMP, TRBL_TMP
+	BANKSEL		PARAM_REG
+	movf		PARAM_REG, W
 	addlw		0x01
 	movwf		FSR
 	call		get_freq_scale
 	call		iic_send_byte
-	BANKSEL		TRBL_TMP
-	movf		TRBL_TMP, W
-	addlw		0x01
-	movwf		FSR
-	call		get_freq_scale
-;	addlw		AP_FRQ|AP_FRQ_T			; тембр - высокие
-	call		iic_send_byte
-
-;	clrf		COUNT3
-	movlw		AP_ATT16
-	movwf		COUNT3
+	ENDM
+	movf		BAL_TMP, W
+	sublw		AP_ATT32
 	movwf		COUNT4
-; 	movlw		0x21
-; 	subwf		BAL_TMP,W
-; 	btfsc		CARRY
-; 		goto	bal_in_right			; баланс смещен вправо
-; 	movf		BAL_TMP,W
-; 	sublw		0x20
-; 	movwf		COUNT3					; сохранить смещение вправо
-; bal_in_right:
-; 	clrf		COUNT4
-; 	movlw		0x21
-; 	subwf		BAL_TMP,W
-; 	btfss		CARRY
-; 		goto	send_bal				; баланс по центру
-; 	movf		BAL_TMP,W
-; 	addlw		not 0x20
-; 	movwf		COUNT4					; сохранить смещение влево
+	sublw		AP_ATT32
+	movwf		COUNT3
 send_bal:
-	movf		COUNT4,W
-;	addlw		AP_ATT_LF				; аттенюатор левый передний
+	movf		COUNT4,W				; аттенюатор правый
 	call		iic_send_byte
-	BANKSEL		COUNT3
+	BANKSEL		COUNT3					; аттенюатор правый
 	movf		COUNT3,W
-;	addlw		AP_ATT_RF				; аттенюатор правый передний
-;	call		iic_send_byte
-; 	BANKSEL		COUNT4
-; 	movf		COUNT4,W
-; 	addlw		AP_ATT_LR				; аттенюатор левый задний
-; 	call		iic_send_byte
-; 	BANKSEL		COUNT3
-; 	movf		COUNT3,W
-; 	addlw		AP_ATT_RR				; аттенюатор правый задний
-; 	call		iic_send_byte
-; 
-; 	BANKSEL		PAMP_TMP
-; 	movf		PAMP_TMP, W
-; 	andlw		00000011B
-; 	sublw		00000011B
-; 	movwf		LINE_NUM
-; 	bcf			CARRY
-; REPT	3
-; 	rlf			LINE_NUM, F				; аудио переключатели - предусиление
-; 	ENDM
-; 	btfss		PAMP_TMP, BIT4			;
-; 		bsf		LINE_NUM, BIT2			; аудио переключатели - тонкомпенсация
-; 	decf		CNL_TMP,W
-; 	iorlw		AP_ASW					; аудио переключатели - канал
-; 	iorwf		LINE_NUM, W
-; 	call		iic_send_byte
-
 icc_msg_end:
 	call		iic_send_byte			; отправка боследнего байта сообщения
 	goto		iic_stop_condition		; условие стоп
@@ -768,7 +695,6 @@ param_plus:
 	return
 ;*******************************************************************************
 volume_plus:
-;	fsr_reg_plus	VOL_TMP, 64
 	fsr_reg_plus	VOL_TMP, 48
 ;*******************************************************************************
 treble_plus:
@@ -781,20 +707,10 @@ bass_plus:
 	fsr_reg_plus	BASS_TMP, 16
 ;*******************************************************************************
 balance_plus:
-	fsr_reg_plus	BAL_TMP, 64
+	fsr_reg_plus	BAL_TMP, 32
 ;*******************************************************************************
 gain_plus:
 	fsr_reg_plus	PAMP_TMP, 16
-; 	movf		PAMP_TMP, W
-; 	andlw		00000011B
-; 	xorlw		00000011B
-; 	btfss		ZERO
-; 		incf	PAMP_TMP, F
-; 	return
-;*******************************************************************************
-; loud_on:
-; 	bsf			PAMP_TMP, BIT4
-; 	return
 ;*******************************************************************************
 encoder_plus:
 	movf		MODE_NUM,W
@@ -803,22 +719,18 @@ encoder_plus:
 		goto	volume_plus
 	xorlw		0x03		;b'0000 0011',' ',.03
 	btfsc		ZERO
-		goto	treble_plus
-	xorlw		0x01		;b'0000 0001',' ',.01
-	btfsc		ZERO
-;		goto	bass_plus
-		goto	middle_plus
-	xorlw		0x07		;b'0000 0111',' ',.07
-	btfsc		ZERO
-;		goto	balance_plus
 		goto	bass_plus
 	xorlw		0x01		;b'0000 0001',' ',.01
 	btfsc		ZERO
-;		goto	gain_plus
+		goto	middle_plus
+	xorlw		0x07		;b'0000 0111',' ',.07
+	btfsc		ZERO
+		goto	treble_plus
+	xorlw		0x01		;b'0000 0001',' ',.01
+	btfsc		ZERO
 		goto	balance_plus
 	xorlw		0x03		;b'0000 0011',' ',.03
 	btfsc		ZERO
-;		goto	loud_on
 		goto	gain_plus
 	xorlw		0x01
 	btfss		ZERO
@@ -866,16 +778,6 @@ balance_minus:
 ;*******************************************************************************	
 gain_minus:
 	fsr_reg_minus	PAMP_TMP
-; 	movf		PAMP_TMP, W
-; 	andlw		00000011B
-; 	btfsc		ZERO
-; 		return
-; 	decf		PAMP_TMP, F
-; 	return
-;*******************************************************************************
-; loud_off:
-; 	bcf			PAMP_TMP, BIT4
-; 	return
 ;*******************************************************************************
 encoder_minus:
 	movf		MODE_NUM,W
@@ -884,22 +786,18 @@ encoder_minus:
 		goto	volume_minus
 	xorlw		0x03		;b'0000 0011',' ',.03
 	btfsc		ZERO
-		goto	treble_minus
-	xorlw		0x01		;b'0000 0001',' ',.01
-	btfsc		ZERO
-;		goto	bass_minus
-		goto	middle_minus
-	xorlw		0x07		;b'0000 0111',' ',.07
-	btfsc		ZERO
-;		goto	balance_minus
 		goto	bass_minus
 	xorlw		0x01		;b'0000 0001',' ',.01
 	btfsc		ZERO
-;		goto	gain_minus
+		goto	middle_minus
+	xorlw		0x07		;b'0000 0111',' ',.07
+	btfsc		ZERO
+		goto	treble_minus
+	xorlw		0x01		;b'0000 0001',' ',.01
+	btfsc		ZERO
 		goto	balance_minus
 	xorlw		0x03		;b'0000 0011',' ',.03
 	btfsc		ZERO
-;		goto	loud_off
 		goto	gain_minus
 	xorlw		0x01
 	btfss		ZERO
@@ -953,16 +851,16 @@ vol_mode:
 	movf		VOL_TMP,W
 	call		vol_scale
 	goto		iic_msg
-trbl_mode:
-	movf		TRBL_TMP,W
+bass_mode:
+	movf		BASS_TMP,W
 	call		freq_scale
 	goto		iic_msg
 mdl_mode:
 	movf		MDL_TMP, W
 	call		freq_scale
 	goto		iic_msg
-bass_mode:
-	movf		BASS_TMP,W
+trbl_mode:
+	movf		TRBL_TMP,W
 	call		freq_scale
 	goto		iic_msg
 bal_mode:
@@ -971,27 +869,8 @@ bal_mode:
 	goto		iic_msg
 gain_mode:
 	movf		PAMP_TMP, W
-	call		vol_scale
+	call		freq_scale
 	goto		iic_msg
-
-;	movlw		0x10		;b'0001 0000',' ',.16
-; 	movwf		LINE_POS
-; 	movlw		0x01		;b'0000 0001',' ',.01
-; 	call		set_DDRAM_ADDR
-; 	movf		PAMP_TMP,W
-; 	andlw		00000011B
-; 	addlw		_0?			; '0'
-; 	call		print_lcd
-; 	goto		iic_msg
-; loud_mode:
-; 	movlw		0x10
-; 	movwf		LINE_POS
-; 	call		set_DDRAM_ADDR
-; 	movlw		_0?
-; 	btfsc		PAMP_TMP, BIT4
-; 		addlw	0x01
-; 	call		print_lcd
-; 	goto		iic_msg
 cnl_mode:
 	movlw		0x10		;b'0001 0000',' ',.16
 	movwf		LINE_POS
@@ -1009,22 +888,18 @@ select_mode:
 		goto	vol_mode
 	xorlw		0x03		;b'0000 0011',' ',.03
 	btfsc		ZERO
-		goto	trbl_mode
-	xorlw		0x01		;b'0000 0001',' ',.01
-	btfsc		ZERO
-;		goto	bass_mode
-		goto	mdl_mode
-	xorlw		0x07		;b'0000 0111',' ',.07
-	btfsc		ZERO
-;		goto	bal_mode
 		goto	bass_mode
 	xorlw		0x01		;b'0000 0001',' ',.01
 	btfsc		ZERO
-;		goto	gain_mode
+		goto	mdl_mode
+	xorlw		0x07		;b'0000 0111',' ',.07
+	btfsc		ZERO
+		goto	trbl_mode
+	xorlw		0x01		;b'0000 0001',' ',.01
+	btfsc		ZERO
 		goto	bal_mode
 	xorlw		0x03		;b'0000 0011',' ',.03
 	btfsc		ZERO
-;		goto	loud_mode
 		goto	gain_mode
 	xorlw		0x01
 	btfsc		ZERO
@@ -1128,26 +1003,23 @@ cnl_num:
 ;*******************************************************************************
 bal_scale:
 	movwf		LEVEL_REG
-	movlw		0x04			; вес полного сегмента шкалы
+	movlw		0x02		; вес полного сегмента шкалы
 	movwf		TMP_PKG1
 	movf		LEVEL_REG, W
-	sublw		0x04
+	sublw		0x02
 	btfsc		CARRY
 		goto	pr_lt
-	goto		pr_rt
-pr_rt:
-	movlw		0x01
+	movlw		0x02
 	subwf		LEVEL_REG, W
 	call		full_segs
 	movlw		RIGHT?
 	call		print_lcd
-	movf		LEVEL_REG, W
-	sublw		0x40
-	movwf		TMP_PKG
-	sublw		0x01
-	btfsc		CARRY
-		goto	e_u_l
 pr_lt:
+	movf		LEVEL_REG, W
+	sublw		0x20
+	movwf		TMP_PKG
+	btfsc		ZERO
+		goto	e_u_l
 	movlw		LEFT?
 	call		print_lcd
 	movlw		0x01
@@ -1157,8 +1029,7 @@ pr_lt:
 ;*******************************************************************************
 vol_scale:
 	movwf		LEVEL_REG
-;	movlw		0x05			; вес полного сегмента шкалы
-	movlw		0x03
+	movlw		0x03		; вес полного сегмента шкалы
 	movwf		TMP_PKG1
 	movf		LEVEL_REG, W
 	call		full_segs
@@ -1180,7 +1051,7 @@ e_u_l:
 ;*******************************************************************************
 ; функция заполняет шкалу полными сегментами
 ; и возвращает в аккумуляторе остаток
-; на входе: в аккумуляторе значение шкалы, в TMP_PKG1 размер сегмента шкалы
+; на входе: в аккумуляторе значение шкалы, в TMP_PKG1 вес сегмента шкалы
 full_segs:
 	movwf		TMP_PKG
 	movf		TMP_PKG1, W
