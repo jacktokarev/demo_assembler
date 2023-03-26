@@ -1153,4 +1153,4 @@ mute_on:
 	return
 ;*******************************************************************************
 
-	end	; directive 'end of program'
+	end			ResetVector	; directive 'end of program'
