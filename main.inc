@@ -17,3 +17,5 @@
 
 	EXTRN	PRESSED_KEY
 	EXTRN	check_key
+	
+	EXTRN	irread, irdecode, IRADDR, IRDATA

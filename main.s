@@ -23,7 +23,7 @@ REG020:		DS	1	;		equ	020h
 REG021:		DS	1	;		equ	021h
 REG022:		DS	1	;		equ	022h
 REG023:		DS	1	;		equ	023h
-IRRC_COM:	DS	1	;		equ	024h
+;IRDATA:	DS	1	;		equ	024h
 BAL_TMP:	DS	1	;		equ	025h
 BASS_TMP:	DS	1	;		equ	026h
 CNL_TMP:	DS	1	;		equ	027h
@@ -49,19 +49,19 @@ MDL_TMP:	DS	1	;
 ;*******************************************************************************
 psect		udata_shr
 		
-REG070:		DS	1	;		equ	070h
-REG071:		DS	1	;		equ	071h
-REG072:		DS	1	;		equ	072h
-REG073:		DS	1	;		equ	073h
+;REG070:		DS	1	;		equ	070h
+;REG071:		DS	1	;		equ	071h
+;REG072:		DS	1	;		equ	072h
+;REG073:		DS	1	;		equ	073h
 TMP_STATUS:	DS	1	;		equ	074h
 TMP_PCLATH:	DS	1	;		equ	075h
-REG076:		DS	1	;		equ	076h
+;REG076:		DS	1	;		equ	076h
 TMP_ENC_B:	DS	1	;		equ	077h
-REG078:		DS	1	;		equ	078h
-REG079:		DS	1	;		equ	079h
-REG07A:		DS	1	;		equ	07Ah
-REG07B:		DS	1	;		equ	07Bh
-REG07C:		DS	1	;		equ	07Ch
+;REG078:		DS	1	;		equ	078h
+;REG079:		DS	1	;		equ	079h
+;REG07A:		DS	1	;		equ	07Ah
+;REG07B:		DS	1	;		equ	07Bh
+;REG07C:		DS	1	;		equ	07Ch
 TMP_ENC_A:	DS	1	;		equ	07Dh
 TMP_W:		DS	1	;		equ	07Eh
 	
@@ -85,8 +85,8 @@ psect ResVect, class=CODE, abs, delta=2
 	org			0x0000
 ResetVector:
 	goto		start
-	org			0x0004
 ;*******************************************************************************
+	org			0x0004
 HighInterruptVector:
 	movwf		TMP_W		; сохранить значение аккумулятора
 	movf		STATUS, W	; сохранить
@@ -245,126 +245,183 @@ e_n:
 	call		to_line_2
 ;*******************************************************************************
 decode_irrc:
-	movf		IRRC_COM,W
+
+;	call		irdecode
+	movf		IRADDR,W
+	xorlw		0x80		;адрес устройства
+	btfss		ZERO
+		goto	p_to_v_mode
+		
+
+	movf		IRDATA,W
 	btfsc		ZERO
 		goto	p_to_v_mode
-	movf		IRRC_COM,W
-	xorlw		0x0C		;b'0000 1100',' ',.12
-	btfss		ZERO
-		goto	L_00AE
-	movf		REG021,W
-	iorwf		REG020,W
-	btfss		ZERO
-		goto	L_00AE
-	call		on_off_dev
-L_00AE:
+	movf		IRDATA,W
+;	xorlw		0x0C		;b'0000 1100',' ',.12
+	xorlw		0x80		; код кнопки включения
+
+	btfsc		ZERO
+		call	on_off_dev
+
+;	btfss		ZERO
+;		goto	L_00AE
+;	movf		REG021,W
+;	iorwf		REG020,W
+;	btfss		ZERO
+;		goto	L_00AE
+;	call		on_off_dev
+;L_00AE:
+
 	movf		ON_OFF,F
 	btfsc		ZERO
-		goto	L_00DC
+		goto	decode_command
 	goto		auto_vol_mode
-L_00B2:
+;*******************************************************************************
+ch_one:
 	clrf		CNL_TMP
 	incf		CNL_TMP,F
 	goto		auto_vol_mode
-L_00B5:
+ch_two:
 	movlw		0x02		;b'0000 0010',' ',.02
-	goto		L_00B8
-L_00B7:
+	goto		ch_setup
+ch_three:
 	movlw		0x03		;b'0000 0011',' ',.03
-L_00B8:
+	goto		ch_setup
+ch_four:
+	movlw		0x04
+ch_setup:
 	movwf		CNL_TMP
 	goto		auto_vol_mode
-L_00BA:
+rc_mute:
 	movf		REG021,W
 	iorwf		REG020,W
 	btfss		ZERO
 		goto	auto_vol_mode
 	call		mute_on_off
 	goto		auto_vol_mode
-L_00C0:
+rc_mode_next:
 	movf		REG021,W
 	iorwf		REG020,W
 	btfss		ZERO
 		goto	auto_vol_mode
 	call		mode_next
 	goto		auto_vol_mode
-L_00C6:
+rc_mode_prev:
 	movf		REG021,W
 	iorwf		REG020,W
 	btfss		ZERO
 		goto	auto_vol_mode
 	call		mode_prev
 	goto		auto_vol_mode
-L_00CC:
+rc_param_minus:
 	call		encoder_minus
 	goto		auto_vol_mode
-L_00CE:
+rc_param_plus:
 	call		encoder_plus
 	goto		auto_vol_mode
-L_00D0:
-	clrf		MODE_NUM
-	incf		MODE_NUM,F
-	goto		auto_vol_mode
-L_00D3:
-	movlw		0x02		;b'0000 0010',' ',.02
-	goto		L_00DA
-L_00D5:
-	movlw		0x03		;b'0000 0011',' ',.03
-	goto		L_00DA
-L_00D7:
-	movlw		0x04		;b'0000 0100',' ',.04
-	goto		L_00DA
-L_00D9:
-	movlw		0x05		;b'0000 0101',' ',.05
-L_00DA:
-	movwf		MODE_NUM
-	goto		auto_vol_mode
+;L_00D0:
+;	clrf		MODE_NUM
+;	incf		MODE_NUM,F
+;	goto		auto_vol_mode
+;L_00D3:
+;	movlw		0x02		;b'0000 0010',' ',.02
+;	goto		L_00DA
+;L_00D5:
+;	movlw		0x03		;b'0000 0011',' ',.03
+;	goto		L_00DA
+;L_00D7:
+;	movlw		0x04		;b'0000 0100',' ',.04
+;	goto		L_00DA
+;L_00D9:
+;	movlw		0x05		;b'0000 0101',' ',.05
+;L_00DA:
+;	movwf		MODE_NUM
+;	goto		auto_vol_mode
 ;*******************************************************************************
-L_00DC:
-	movf		IRRC_COM,W
-	xorlw		0x01		;b'0000 0001',' ',.01
+decode_command:
+	movf		IRDATA,W
+;	xorlw		0x01		;b'0000 0001',' ',.01
+	
+	xorlw		0x00		; код кнопки "1"
+	
 	btfsc		ZERO
-		goto	L_00B2
-	xorlw		0x03		;b'0000 0011',' ',.03
+		goto	ch_one
+;	xorlw		0x03		;b'0000 0011',' ',.03
+
+	movf		IRDATA,W
+	xorlw		0xED		; код кнопки "2"
+	
 	btfsc		ZERO
-		goto	L_00B5
-	xorlw		0x01		;b'0000 0001',' ',.01
+		goto	ch_two
+;	xorlw		0x01		;b'0000 0001',' ',.01
+
+	movf		IRDATA,W
+	xorlw		0x60		; код кнопки "3"
+
 	btfsc		ZERO
-		goto	L_00B7
-	xorlw		0x0E		;b'0000 1110',' ',.14
+		goto	ch_three
+;	xorlw		0x0E		;b'0000 1110',' ',.14
+
+	movf		IRDATA,W
+	xorlw		0x20		; код кнопки "4"
 	btfsc		ZERO
-		goto	L_00BA
-	xorlw		0x1D		;b'0001 1101','',.29
+		goto	ch_four
+	movf		IRDATA,W
+	xorlw		0x48		; код кнопки "mute"
+
 	btfsc		ZERO
-		goto	L_00C0
-	xorlw		0x01		;b'0000 0001',' ',.01
+		goto	rc_mute
+;	xorlw		0x1D		;b'0001 1101','',.29
+
+	movf		IRDATA,W
+	xorlw		0xE8		; код кнопки "вверх" ("CH+")
+
 	btfsc		ZERO
-		goto	L_00C6
-	xorlw		0x04		;b'0000 0100',' ',.04
+		goto	rc_mode_next
+;	xorlw		0x01		;b'0000 0001',' ',.01
+
+	movf		IRDATA,W
+	xorlw		0x58		; код кнопки "вниз" ("CH-")
+
 	btfsc		ZERO
-		goto	L_00CC
-	xorlw		0x03		;b'0000 0011',' ',.03
+		goto	rc_mode_prev
+;	xorlw		0x04		;b'0000 0100',' ',.04
+
+	movf		IRDATA,W
+	xorlw		0x42		; код кнопки "влево" ("V-")
+
 	btfsc		ZERO
-		goto	L_00CE
-	xorlw		0x01		;b'0000 0001',' ',.01
+		goto	rc_param_minus
+;	xorlw		0x03		;b'0000 0011',' ',.03
+
+	movf		IRDATA,W
+	xorlw		0x82		; код кнопки "вправо" ("V+")
+
 	btfsc		ZERO
-		goto	L_00D0
-	xorlw		0x3C		;b'0011 1100','<',.60
-	btfsc		ZERO
-		goto	L_00D3
-	xorlw		0x07		;b'0000 0111',' ',.07
-	btfsc		ZERO
-		goto	L_00D5
-	xorlw		0x01		;b'0000 0001',' ',.01
-	btfsc		ZERO
-		goto	L_00D7
-	xorlw		0x03		;b'0000 0011',' ',.03
-	btfsc		ZERO
-		goto	L_00D9
+		goto	rc_param_plus
+;	xorlw		0x01		;b'0000 0001',' ',.01
+
+;	movf		IRDATA,W
+;	xorlw		0x		; код кнопки ""
+;
+;	btfsc		ZERO
+;		goto	L_00D0
+;	xorlw		0x3C		;b'0011 1100','<',.60
+;	btfsc		ZERO
+;		goto	L_00D3
+;	xorlw		0x07		;b'0000 0111',' ',.07
+;	btfsc		ZERO
+;		goto	L_00D5
+;	xorlw		0x01		;b'0000 0001',' ',.01
+;	btfsc		ZERO
+;		goto	L_00D7
+;	xorlw		0x03		;b'0000 0011',' ',.03
+;	btfsc		ZERO
+;		goto	L_00D9
 ;*******************************************************************************
 ; Автоматический переход в режим регулировки громкости
 auto_vol_mode:
-	clrf		IRRC_COM
+;	clrf		IRDATA
 	call		mode_print
 	movlw		0x04		;b'0000 0100',' ',.04
 	movwf		REG021
@@ -502,84 +559,87 @@ int_tmr:
 		goto	int_end		; не требуется интерпритация irrc
 	bcf			T0IF		; сброс флага прерывания по TMR0
 ;*******************************************************************************
+
+	call		irread
+
 ; Опрос ДУ
-	clrf		REG078
-	incf		REG078,F
-	clrf		REG079
-	clrf		REG07A		; счетчик принятых бит в пакете
-ir_read_bit:
-	movlw		0xA0		;b'1010 0000',' ',.160
-	movwf		REG07B
-	clrf		REG07C
-ir_st_p:
-	movlw		0x01		;b'0000 0001',' ',.01
-	subwf		REG07B,F
-	btfss		CARRY
-		decf	REG07C,F
-	incf		REG07B,W
-	btfsc		ZERO
-		incf	REG07C,W
-	btfss		ZERO
-		goto	ir_st_p
-	bcf			CARRY
-	BANKSEL		IRRC_PORT
-	btfsc		IRRC
-		bsf		CARRY		; копируем состояние IR приемника в CARRY
-	movlw		0x00		;
-	btfsc		CARRY
-		movlw	0x01		; затем в BIT0 регистра W
-	movwf		REG070		; запоминаем
-	clrf		REG071
-	movf		REG079,W
-	movwf		REG073
-	movf		REG078,W
-	movwf		REG072
-	bcf			CARRY
-	rlf			REG072,F
-	rlf			REG073,F
-	movf		REG070,W
-	addwf		REG072,W
-	movwf		REG078
-	movf		REG071,W
-	btfsc		CARRY
-		incf	REG071,W
-	addwf		REG073,W
-	movwf		REG079
-	movlw		0x00		;b'0000 0000',' ',.00
-	btfsc		IRRC
-		movlw	0x01		;b'0000 0001',' ',.01
-	movwf		REG076
-	movlw		0x32		;b'0011 0010','2',.50
-	movwf		REG07B
-L_0208:
-	clrf		REG07C
-L_0209:
-	movf		REG07C,W
-	iorwf		REG07B,W
-	btfsc		ZERO
-		goto	L_0219
-	movlw		0x01		;b'0000 0001',' ',.01
-	subwf		REG07B,F
-	movlw		0x00		;b'0000 0000',' ',.00
-	btfss		CARRY
-		decf	REG07C,F
-	btfsc		IRRC
-		movlw	0x01		;b'0000 0001',' ',.01
-	xorwf		REG076,W
-	btfsc		ZERO
-		goto	L_0209
-	clrf		REG07B
-	goto		L_0208
-L_0219:
-	incf		REG07A,F
-	movlw		0x0D		;b'0000 1101',' ',.13
-	subwf		REG07A,W
-	btfss		CARRY
-		goto	ir_read_bit
-	movf		REG078,W
-	movwf		IRRC_COM
-	movlw		0x3F		;b'0011 1111','?',.63
-	andwf		IRRC_COM,F	; выделяем команду из принятого пакета
+;	clrf		REG078
+;	incf		REG078,F
+;	clrf		REG079
+;	clrf		REG07A		; счетчик принятых бит в пакете
+;ir_read_bit:
+;	movlw		0xA0		;b'1010 0000',' ',.160
+;	movwf		REG07B
+;	clrf		REG07C
+;ir_st_p:
+;	movlw		0x01		;b'0000 0001',' ',.01
+;	subwf		REG07B,F
+;	btfss		CARRY
+;		decf	REG07C,F
+;	incf		REG07B,W
+;	btfsc		ZERO
+;		incf	REG07C,W
+;	btfss		ZERO
+;		goto	ir_st_p
+;	bcf			CARRY
+;	BANKSEL		IRRC_PORT
+;	btfsc		IRRC
+;		bsf		CARRY		; копируем состояние IR приемника в CARRY
+;	movlw		0x00		;
+;	btfsc		CARRY
+;		movlw	0x01		; затем в BIT0 регистра W
+;	movwf		REG070		; запоминаем
+;	clrf		REG071
+;	movf		REG079,W
+;	movwf		REG073
+;	movf		REG078,W
+;	movwf		REG072
+;	bcf			CARRY
+;	rlf			REG072,F
+;	rlf			REG073,F
+;	movf		REG070,W
+;	addwf		REG072,W
+;	movwf		REG078
+;	movf		REG071,W
+;	btfsc		CARRY
+;		incf	REG071,W
+;	addwf		REG073,W
+;	movwf		REG079
+;	movlw		0x00		;b'0000 0000',' ',.00
+;	btfsc		IRRC
+;		movlw	0x01		;b'0000 0001',' ',.01
+;	movwf		REG076
+;	movlw		0x32		;b'0011 0010','2',.50
+;	movwf		REG07B
+;L_0208:
+;	clrf		REG07C
+;L_0209:
+;	movf		REG07C,W
+;	iorwf		REG07B,W
+;	btfsc		ZERO
+;		goto	L_0219
+;	movlw		0x01		;b'0000 0001',' ',.01
+;	subwf		REG07B,F
+;	movlw		0x00		;b'0000 0000',' ',.00
+;	btfss		CARRY
+;		decf	REG07C,F
+;	btfsc		IRRC
+;		movlw	0x01		;b'0000 0001',' ',.01
+;	xorwf		REG076,W
+;	btfsc		ZERO
+;		goto	L_0209
+;	clrf		REG07B
+;	goto		L_0208
+;L_0219:
+;	incf		REG07A,F
+;	movlw		0x0D		;b'0000 1101',' ',.13
+;	subwf		REG07A,W
+;	btfss		CARRY
+;		goto	ir_read_bit
+;	movf		REG078,W
+;	movwf		IRDATA
+;	movlw		0x3F		;b'0011 1111','?',.63
+;	andwf		IRDATA,F	; выделяем команду из принятого пакета
 	movlw		0xFF		;b'1111 1111','я',.255
 	movwf		TMR0
 ;*******************************************************************************
