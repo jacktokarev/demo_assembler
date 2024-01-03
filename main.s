@@ -23,7 +23,6 @@ REG020:		DS	1	;		equ	020h
 REG021:		DS	1	;		equ	021h
 REG022:		DS	1	;		equ	022h
 REG023:		DS	1	;		equ	023h
-;IRDATA:	DS	1	;		equ	024h
 BAL_TMP:	DS	1	;		equ	025h
 BASS_TMP:	DS	1	;		equ	026h
 CNL_TMP:	DS	1	;		equ	027h
@@ -48,26 +47,16 @@ MDL_TMP:	DS	1	;
 	
 ;*******************************************************************************
 psect		udata_shr
-		
-;REG070:		DS	1	;		equ	070h
-;REG071:		DS	1	;		equ	071h
-;REG072:		DS	1	;		equ	072h
-;REG073:		DS	1	;		equ	073h
+
+TMP_FSR:	DS	1	;
 TMP_STATUS:	DS	1	;		equ	074h
 TMP_PCLATH:	DS	1	;		equ	075h
-;REG076:		DS	1	;		equ	076h
 TMP_ENC_B:	DS	1	;		equ	077h
-;REG078:		DS	1	;		equ	078h
-;REG079:		DS	1	;		equ	079h
-;REG07A:		DS	1	;		equ	07Ah
-;REG07B:		DS	1	;		equ	07Bh
-;REG07C:		DS	1	;		equ	07Ch
 TMP_ENC_A:	DS	1	;		equ	07Dh
 TMP_W:		DS	1	;		equ	07Eh
 	
 ;*******************************************************************************
 psect	edata
-
 modes:
 	DW	S?,t?,a?,n?,d?,SPACE?,b?,y?,0
 	DW	V?,o?,l?,u?,m?,e?,0
@@ -78,8 +67,7 @@ modes:
 	DW	G?,a?,i?,n?,0
 	DW	C?,h?,a?,n?,n?,e?,l?,0
 parameters:
-	DW	0x01,0x0E,0x05,0x08,0x08,0x08,0x10,0xff	
-
+	DW	0x01,0x01,0x05,0x08,0x08,0x08,0x10,0xff	
 ;*******************************************************************************
 psect ResVect, class=CODE, abs, delta=2
 	org			0x0000
@@ -89,10 +77,12 @@ ResetVector:
 	org			0x0004
 HighInterruptVector:
 	movwf		TMP_W		; сохранить значение аккумулятора
-	movf		STATUS, W	; сохранить
+	swapf		STATUS, W	; сохранить
 	movwf		TMP_STATUS	; состояние регистра STATUS
-	movf		PCLATH, W	; сохранить
+	swapf		PCLATH, W	; сохранить
 	movwf		TMP_PCLATH	; значение PCLATH
+	swapf		FSR, W		; сохранить
+	movwf		TMP_FSR		; значение FSR
 	goto		intrpt		; переход на обработку прерывания
 ;*******************************************************************************
 get_freq_scale:
@@ -107,25 +97,6 @@ IRP fsp, 0x00, 0x00, 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07
 IRP	fsp, 0x0F, 0x0E, 0x0D, 0x0C, 0x0B, 0x0A, 0x09, 0x08
 	retlw		fsp
 	ENDM
-	
-;	retlw		0x00		;b'0000 0000',' ',.00
-;	retlw		0x00		;b'0000 0000',' ',.00
-;	retlw		0x00		;b'0000 0000',' ',.00
-;	retlw		0x01		;b'0000 0001',' ',.01
-;	retlw		0x02		;b'0000 0010',' ',.02
-;	retlw		0x03		;b'0000 0011',' ',.03
-;	retlw		0x04		;b'0000 0100',' ',.04
-;	retlw		0x05		;b'0000 0101',' ',.05
-;	retlw		0x06		;b'0000 0110',' ',.06
-;	retlw		0x07		;b'0000 0111',' ',.07
-;	retlw		0x0F		;b'0000 1111',' ',.15
-;	retlw		0x0E		;b'0000 1110',' ',.14
-;	retlw		0x0D		;b'0000 1101',' ',.13
-;	retlw		0x0C		;b'0000 1100',' ',.12
-;	retlw		0x0B		;b'0000 1011',' ',.11
-;	retlw		0x0A		;b'0000 1010',' ',.10
-;	retlw		0x09		;b'0000 1001',' ',.09
-;	retlw		0x08		;b'0000 1000',' ',.08
 ;*******************************************************************************
 start:
 	bcf			STATUS,7	; банки 0, 1 при косвенной адресации 
@@ -245,49 +216,47 @@ e_n:
 	call		to_line_2
 ;*******************************************************************************
 decode_irrc:
-
 ;	call		irdecode
 	movf		IRADDR,W
 	xorlw		0x80		;адрес устройства
 	btfss		ZERO
 		goto	p_to_v_mode
-		
-
 	movf		IRDATA,W
-	btfsc		ZERO
-		goto	p_to_v_mode
-	movf		IRDATA,W
-;	xorlw		0x0C		;b'0000 1100',' ',.12
 	xorlw		0x80		; код кнопки включения
 
 	btfsc		ZERO
 		call	on_off_dev
-
-;	btfss		ZERO
-;		goto	L_00AE
-;	movf		REG021,W
-;	iorwf		REG020,W
-;	btfss		ZERO
-;		goto	L_00AE
-;	call		on_off_dev
-;L_00AE:
-
 	movf		ON_OFF,F
 	btfsc		ZERO
 		goto	decode_command
 	goto		auto_vol_mode
 ;*******************************************************************************
 ch_one:
-	clrf		CNL_TMP
-	incf		CNL_TMP,F
-	goto		auto_vol_mode
+	movf		REG021,W
+	iorwf		REG020,W
+	btfss		ZERO
+		goto	auto_vol_mode
+	movlw		0x01		;
+	goto		ch_setup
 ch_two:
+	movf		REG021,W
+	iorwf		REG020,W
+	btfss		ZERO
+		goto	auto_vol_mode
 	movlw		0x02		;b'0000 0010',' ',.02
 	goto		ch_setup
 ch_three:
+	movf		REG021,W
+	iorwf		REG020,W
+	btfss		ZERO
+		goto	auto_vol_mode
 	movlw		0x03		;b'0000 0011',' ',.03
 	goto		ch_setup
 ch_four:
+	movf		REG021,W
+	iorwf		REG020,W
+	btfss		ZERO
+		goto	auto_vol_mode
 	movlw		0x04
 ch_setup:
 	movwf		CNL_TMP
@@ -319,73 +288,8 @@ rc_param_minus:
 rc_param_plus:
 	call		encoder_plus
 	goto		auto_vol_mode
-;L_00D0:
-;	clrf		MODE_NUM
-;	incf		MODE_NUM,F
-;	goto		auto_vol_mode
-;L_00D3:
-;	movlw		0x02		;b'0000 0010',' ',.02
-;	goto		L_00DA
-;L_00D5:
-;	movlw		0x03		;b'0000 0011',' ',.03
-;	goto		L_00DA
-;L_00D7:
-;	movlw		0x04		;b'0000 0100',' ',.04
-;	goto		L_00DA
-;L_00D9:
-;	movlw		0x05		;b'0000 0101',' ',.05
-;L_00DA:
-;	movwf		MODE_NUM
-;	goto		auto_vol_mode
 ;*******************************************************************************
 decode_command:
-	movf		IRDATA,W
-;	xorlw		0x01		;b'0000 0001',' ',.01
-	
-	xorlw		0x00		; код кнопки "1"
-	
-	btfsc		ZERO
-		goto	ch_one
-;	xorlw		0x03		;b'0000 0011',' ',.03
-
-	movf		IRDATA,W
-	xorlw		0xED		; код кнопки "2"
-	
-	btfsc		ZERO
-		goto	ch_two
-;	xorlw		0x01		;b'0000 0001',' ',.01
-
-	movf		IRDATA,W
-	xorlw		0x60		; код кнопки "3"
-
-	btfsc		ZERO
-		goto	ch_three
-;	xorlw		0x0E		;b'0000 1110',' ',.14
-
-	movf		IRDATA,W
-	xorlw		0x20		; код кнопки "4"
-	btfsc		ZERO
-		goto	ch_four
-	movf		IRDATA,W
-	xorlw		0x48		; код кнопки "mute"
-
-	btfsc		ZERO
-		goto	rc_mute
-;	xorlw		0x1D		;b'0001 1101','',.29
-
-	movf		IRDATA,W
-	xorlw		0xE8		; код кнопки "вверх" ("CH+")
-
-	btfsc		ZERO
-		goto	rc_mode_next
-;	xorlw		0x01		;b'0000 0001',' ',.01
-
-	movf		IRDATA,W
-	xorlw		0x58		; код кнопки "вниз" ("CH-")
-
-	btfsc		ZERO
-		goto	rc_mode_prev
-;	xorlw		0x04		;b'0000 0100',' ',.04
 
 	movf		IRDATA,W
 	xorlw		0x42		; код кнопки "влево" ("V-")
@@ -399,29 +303,45 @@ decode_command:
 
 	btfsc		ZERO
 		goto	rc_param_plus
-;	xorlw		0x01		;b'0000 0001',' ',.01
 
-;	movf		IRDATA,W
-;	xorlw		0x		; код кнопки ""
-;
-;	btfsc		ZERO
-;		goto	L_00D0
-;	xorlw		0x3C		;b'0011 1100','<',.60
-;	btfsc		ZERO
-;		goto	L_00D3
-;	xorlw		0x07		;b'0000 0111',' ',.07
-;	btfsc		ZERO
-;		goto	L_00D5
-;	xorlw		0x01		;b'0000 0001',' ',.01
-;	btfsc		ZERO
-;		goto	L_00D7
-;	xorlw		0x03		;b'0000 0011',' ',.03
-;	btfsc		ZERO
-;		goto	L_00D9
+	movf		REG021,W
+	iorwf		REG020,W
+	btfss		ZERO
+		goto	auto_vol_mode
+		
+	movf		IRDATA,W
+	xorlw		0x00		; код кнопки "1"
+	btfsc		ZERO
+		goto	ch_one
+	movf		IRDATA,W
+	xorlw		0xE0		; код кнопки "2"
+	btfsc		ZERO
+		goto	ch_two
+	movf		IRDATA,W
+	xorlw		0x60		; код кнопки "3"
+	btfsc		ZERO
+		goto	ch_three
+	movf		IRDATA,W
+	xorlw		0x20		; код кнопки "4"
+	btfsc		ZERO
+		goto	ch_four
+	movf		IRDATA,W
+	xorlw		0x48		; код кнопки "mute"
+	btfsc		ZERO
+		goto	rc_mute
+	movf		IRDATA,W
+	xorlw		0xE8		; код кнопки "вверх" ("CH+")
+	btfsc		ZERO
+		goto	rc_mode_next
+	movf		IRDATA,W
+	xorlw		0x58		; код кнопки "вниз" ("CH-")
+	btfsc		ZERO
+		goto	rc_mode_prev
 ;*******************************************************************************
 ; Автоматический переход в режим регулировки громкости
 auto_vol_mode:
-;	clrf		IRDATA
+	clrf		IRADDR
+	clrf		IRDATA
 	call		mode_print
 	movlw		0x04		;b'0000 0100',' ',.04
 	movwf		REG021
@@ -512,12 +432,12 @@ intrpt:
 		andlw	0x00		;	нет
 	btfss		RBIE		; прерывания по энкодеру
 		andlw	0x00		;	запрещены
+	bcf			RBIF		; сброс флага прерывания по энкодеру
 	iorlw		0x00		;
 	btfsc		ZERO		; работа энкодера
 		goto	int_tmr		;	не обнаружена
 ;*******************************************************************************
 ; обнаружено прерывание по энкодеру
-	bcf			RBIF		; сброс флага прерывания по энкодеру
 	movlw		0x00		; 0 в аккумулятор
 	BANKSEL		ENC_PORT	;
 	btfsc		ENC_B		; энкодер вправо?
@@ -529,7 +449,7 @@ intrpt:
 	movwf		TMP_ENC_A	;
 	xorwf		ENC_OLD_A,W	;
 	btfsc		ZERO		; есть изменение уровня А энкодера?
-	decf		TMP_ENC_A,W	; 
+		decf	TMP_ENC_A,W	; 
 	btfsc		ZERO		; 
 		goto	enc_state	;
 	decf		TMP_ENC_B,W	;
@@ -547,107 +467,29 @@ enc_state:
 	movf		TMP_ENC_A,W	; сохранить текущее значение 
 	movwf		ENC_OLD_A	; на выводе А энкодера
 ;*******************************************************************************
-; Проврка прерывания по TMR0 (irrc)
+; Проверка прерывания по TMR0 (irrc)
 int_tmr:
 	movlw		0x01		;b'0000 0001',' ',.01
 	btfss		T0IF
 		andlw	0x00		; нет прерывания по TMR0
+	bcf			T0IF		; сброс флага прерывания по TMR0
 	btfss		T0IE
 		andlw	0x00		; прерывание по TMR0 запрещено
 	iorlw		0x00		; для проверки на 0
 	btfsc		ZERO
 		goto	int_end		; не требуется интерпритация irrc
-	bcf			T0IF		; сброс флага прерывания по TMR0
 ;*******************************************************************************
-
 	call		irread
-
-; Опрос ДУ
-;	clrf		REG078
-;	incf		REG078,F
-;	clrf		REG079
-;	clrf		REG07A		; счетчик принятых бит в пакете
-;ir_read_bit:
-;	movlw		0xA0		;b'1010 0000',' ',.160
-;	movwf		REG07B
-;	clrf		REG07C
-;ir_st_p:
-;	movlw		0x01		;b'0000 0001',' ',.01
-;	subwf		REG07B,F
-;	btfss		CARRY
-;		decf	REG07C,F
-;	incf		REG07B,W
-;	btfsc		ZERO
-;		incf	REG07C,W
-;	btfss		ZERO
-;		goto	ir_st_p
-;	bcf			CARRY
-;	BANKSEL		IRRC_PORT
-;	btfsc		IRRC
-;		bsf		CARRY		; копируем состояние IR приемника в CARRY
-;	movlw		0x00		;
-;	btfsc		CARRY
-;		movlw	0x01		; затем в BIT0 регистра W
-;	movwf		REG070		; запоминаем
-;	clrf		REG071
-;	movf		REG079,W
-;	movwf		REG073
-;	movf		REG078,W
-;	movwf		REG072
-;	bcf			CARRY
-;	rlf			REG072,F
-;	rlf			REG073,F
-;	movf		REG070,W
-;	addwf		REG072,W
-;	movwf		REG078
-;	movf		REG071,W
-;	btfsc		CARRY
-;		incf	REG071,W
-;	addwf		REG073,W
-;	movwf		REG079
-;	movlw		0x00		;b'0000 0000',' ',.00
-;	btfsc		IRRC
-;		movlw	0x01		;b'0000 0001',' ',.01
-;	movwf		REG076
-;	movlw		0x32		;b'0011 0010','2',.50
-;	movwf		REG07B
-;L_0208:
-;	clrf		REG07C
-;L_0209:
-;	movf		REG07C,W
-;	iorwf		REG07B,W
-;	btfsc		ZERO
-;		goto	L_0219
-;	movlw		0x01		;b'0000 0001',' ',.01
-;	subwf		REG07B,F
-;	movlw		0x00		;b'0000 0000',' ',.00
-;	btfss		CARRY
-;		decf	REG07C,F
-;	btfsc		IRRC
-;		movlw	0x01		;b'0000 0001',' ',.01
-;	xorwf		REG076,W
-;	btfsc		ZERO
-;		goto	L_0209
-;	clrf		REG07B
-;	goto		L_0208
-;L_0219:
-;	incf		REG07A,F
-;	movlw		0x0D		;b'0000 1101',' ',.13
-;	subwf		REG07A,W
-;	btfss		CARRY
-;		goto	ir_read_bit
-;	movf		REG078,W
-;	movwf		IRDATA
-;	movlw		0x3F		;b'0011 1111','?',.63
-;	andwf		IRDATA,F	; выделяем команду из принятого пакета
-	movlw		0xFF		;b'1111 1111','я',.255
-	movwf		TMR0
 ;*******************************************************************************
 ; Восстановление состояния при выходе из прарывания
 int_end:
-	movf		TMP_PCLATH,W
+	movlw		0xFF		;
+	movwf		TMR0
+	swapf		TMP_PCLATH,W
 	movwf		PCLATH
-	movf		TMP_STATUS,W
+	swapf		TMP_FSR,W
+	movwf		FSR
+	swapf		TMP_STATUS,W
 	movwf		STATUS
 	swapf		TMP_W,F
 	swapf		TMP_W,W
@@ -677,13 +519,13 @@ REPT	8
 REPT	8
 	BYTE_CGRAM	0x15	; три через одну вертикальных полосы слева
 	ENDM
-IRP	BT, 0x1F, 0x11, 0x1D, 0x19, 0x1D, 0x11, 0x1F, 0x00
+IRP	BT, 0x1F, 0x1B, 0x13, 0x1B, 0x1B, 0x11, 0x1F, 0x00
 	BYTE_CGRAM	BT		; 1-ый канал
 	ENDM
 IRP	BT, 0x1F, 0x11, 0x1D, 0x11, 0x17, 0x11, 0x1F, 0x00
 	BYTE_CGRAM	BT		; 2-ой канал
 	ENDM
-IRP	BT, 0x1F, 0x1B, 0x13, 0x1B, 0x1B, 0x11, 0x1F, 0x00
+IRP	BT, 0x1F, 0x11, 0x1D, 0x19, 0x1D, 0x11, 0x1F, 0x00
 	BYTE_CGRAM	BT		; 3-ий канал
 	ENDM
 IRP	BT, 0x1F, 0x15, 0x15, 0x11, 0x1D, 0x1D, 0x1F, 0x00
