@@ -26,9 +26,6 @@ REG023:		DS	1	;		equ	023h
 BAL_TMP:	DS	1	;		equ	025h
 BASS_TMP:	DS	1	;		equ	026h
 CNL_TMP:	DS	1	;		equ	027h
-ENC_ACTIV:	DS	1	;		equ	028h
-ENC_OLD_A:	DS	1	;		equ	029h
-ENC_R_L:	DS	1	;		equ	02Ah
 PAMP_TMP:	DS	1	;		equ	02Bh
 MODE_NUM:	DS	1	;		equ	02Dh
 TRBL_TMP:	DS	1	;		equ	02Eh
@@ -48,12 +45,11 @@ MDL_TMP:	DS	1	;
 ;*******************************************************************************
 psect		udata_shr
 
+TMP_W:		DS	1	;
 TMP_FSR:	DS	1	;
-TMP_STATUS:	DS	1	;		equ	074h
-TMP_PCLATH:	DS	1	;		equ	075h
-TMP_ENC_B:	DS	1	;		equ	077h
-TMP_ENC_A:	DS	1	;		equ	07Dh
-TMP_W:		DS	1	;		equ	07Eh
+TMP_STATUS:	DS	1	;
+TMP_PCLATH:	DS	1	;
+TMP_ENC:	DS	1	;
 	
 ;*******************************************************************************
 psect	edata
@@ -83,7 +79,57 @@ HighInterruptVector:
 	movwf		TMP_PCLATH	; значение PCLATH
 	swapf		FSR, W		; сохранить
 	movwf		TMP_FSR		; значение FSR
-	goto		intrpt		; переход на обработку прерывания
+;	goto		intrpt		; переход на обработку прерывания
+;*******************************************************************************
+; обработчик прерываний
+;intrpt:
+	movlw		0x01		; 1 в аккумулятор
+	btfss		RBIF		; изменения энкодера
+		andlw	0x00		;	нет
+	btfss		RBIE		; прерывания по энкодеру
+		andlw	0x00		;	запрещены
+	iorlw		0x00		;
+	btfsc		ZERO		; работа энкодера
+		goto	int_tmr		;	не обнаружена
+;*******************************************************************************
+; обнаружено прерывание по энкодеру
+	BANKSEL		ENC_PORT	;
+	bcf			TMP_ENC,BIT0; очистка предыдущего
+	bcf			TMP_ENC,BIT1; состояния энкодера
+	btfsc		ENC_B		; сохраняем текущее
+		bsf		TMP_ENC,BIT0; состояние энкодера
+	btfsc		ENC_A		; в битах 0, 1 
+		bsf		TMP_ENC,BIT1; регистра TMP_ENC
+	goto		int_end		;
+;*******************************************************************************
+; Проверка прерывания по TMR0 (irrc)
+int_tmr:
+	movlw		0x01		;b'0000 0001',' ',.01
+	btfss		T0IF
+		andlw	0x00		; нет прерывания по TMR0
+	btfss		T0IE
+		andlw	0x00		; прерывание по TMR0 запрещено
+	iorlw		0x00		; для проверки на 0
+	btfsc		ZERO
+		goto	int_end		; не требуется интерпритация irrc
+;*******************************************************************************
+	call		irread
+;*******************************************************************************
+; Восстановление состояния при выходе из прарывания
+int_end:
+	bcf			T0IF		; сброс флага прерывания по TMR0
+	bcf			RBIF		; сброс флага прерывания по энкодеру
+	movlw		0xFF		;
+	movwf		TMR0		;
+	swapf		TMP_PCLATH,W
+	movwf		PCLATH
+	swapf		TMP_FSR,W
+	movwf		FSR
+	swapf		TMP_STATUS,W
+	movwf		STATUS
+	swapf		TMP_W,F
+	swapf		TMP_W,W
+	retfie
 ;*******************************************************************************
 get_freq_scale:
 	movlw		high(get_freq_scale)
@@ -128,6 +174,11 @@ IRP	FREG, CNL_TMP, PAMP_TMP, VOL_TMP, BASS_TMP, MDL_TMP, TRBL_TMP, BAL_TMP
 ;*******************************************************************************
 	call		iic_msg
 	call		mode_print
+	bcf			T0IF
+	bcf			RBIF
+	movlw		0x03
+	movwf		TMP_ENC
+	bsf			GIE
 ;*******************************************************************************
 read_keys:
 	call		check_key
@@ -200,16 +251,29 @@ pause_mode:
 		goto	pause_mode
 ;*******************************************************************************
 read_enc:
-	decfsz		ENC_ACTIV,W
-		goto	decode_irrc	; энкодер не активен
-	clrf		ENC_ACTIV
-	decfsz		ENC_R_L,W
-		goto	e_m
+	movf		TMP_ENC,W		;
+	andlw		0x03			;
+	btfsc		ZERO			; энкодер в среднем положении между позициями?
+		bsf		TMP_ENC,BIT7	; да, установим флаг
+	btfss		TMP_ENC,BIT7	; установлен флаг перехода через среднее полож.?
+		goto	decode_irrc		; нет, - выход
+	xorlw		0x01			; проверка на вращение
+	btfsc		ZERO			; по часовой
+		bsf		TMP_ENC,BIT6	; да, установим флаг вращения по часовой
+	xorlw		0x02			; проверка на переход
+	btfss		ZERO			; в следущую позицию
+		goto	decode_irrc		; нет, - выход
+	btfsc		TMP_ENC,BIT6	;
+		goto	e_m				;	
 	call		encoder_plus
+	bcf			TMP_ENC,BIT7	;
+	bcf			TMP_ENC,BIT6	;
 	goto		e_n
 e_m:
 	call		encoder_minus
-e_n:
+	bcf			TMP_ENC,BIT7	;
+	bcf			TMP_ENC,BIT6	;
+e_n:	
 	movlw		0xFF		;b'1111 1111','я',.255
 	movwf		REG022
 	movwf		REG023
@@ -223,7 +287,6 @@ decode_irrc:
 		goto	p_to_v_mode
 	movf		IRDATA,W
 	xorlw		0x80		; код кнопки включения
-
 	btfsc		ZERO
 		call	on_off_dev
 	movf		ON_OFF,F
@@ -290,25 +353,18 @@ rc_param_plus:
 	goto		auto_vol_mode
 ;*******************************************************************************
 decode_command:
-
 	movf		IRDATA,W
 	xorlw		0x42		; код кнопки "влево" ("V-")
-
 	btfsc		ZERO
 		goto	rc_param_minus
-;	xorlw		0x03		;b'0000 0011',' ',.03
-
 	movf		IRDATA,W
 	xorlw		0x82		; код кнопки "вправо" ("V+")
-
 	btfsc		ZERO
 		goto	rc_param_plus
-
 	movf		REG021,W
 	iorwf		REG020,W
 	btfss		ZERO
-		goto	auto_vol_mode
-		
+		goto	auto_vol_mode		
 	movf		IRDATA,W
 	xorlw		0x00		; код кнопки "1"
 	btfsc		ZERO
@@ -340,8 +396,6 @@ decode_command:
 ;*******************************************************************************
 ; Автоматический переход в режим регулировки громкости
 auto_vol_mode:
-	clrf		IRADDR
-	clrf		IRDATA
 	call		mode_print
 	movlw		0x04		;b'0000 0100',' ',.04
 	movwf		REG021
@@ -350,6 +404,8 @@ auto_vol_mode:
 	movwf		REG022
 	movwf		REG023
 p_to_v_mode:
+	clrf		IRADDR
+	clrf		IRDATA
 	movf		REG021,W
 	iorwf		REG020,W
 	btfsc		ZERO
@@ -383,8 +439,9 @@ in_vol_mode:
 	incf		MODE_NUM,F
 	call		mode_print
 ;*******************************************************************************
+	goto		read_keys	;
+;*******************************************************************************
 ;Сохранение значений регулируемых параметров в EEPROM
-	goto		save_fregs
 save_freg:
 	BANKSEL		EECON1
 	btfsc		WR
@@ -422,78 +479,7 @@ IRP	FREG, CNL_TMP, PAMP_TMP, VOL_TMP, BASS_TMP, MDL_TMP, TRBL_TMP, BAL_TMP
 	movwf		FSR
 	call		save_freg
 	ENDM
-;*******************************************************************************
-	goto		read_keys
-;*******************************************************************************
-; обработчик прерываний
-intrpt:
-	movlw		0x01		; 1 в аккумулятор
-	btfss		RBIF		; изменения энкодера
-		andlw	0x00		;	нет
-	btfss		RBIE		; прерывания по энкодеру
-		andlw	0x00		;	запрещены
-	bcf			RBIF		; сброс флага прерывания по энкодеру
-	iorlw		0x00		;
-	btfsc		ZERO		; работа энкодера
-		goto	int_tmr		;	не обнаружена
-;*******************************************************************************
-; обнаружено прерывание по энкодеру
-	movlw		0x00		; 0 в аккумулятор
-	BANKSEL		ENC_PORT	;
-	btfsc		ENC_B		; энкодер вправо?
-		movlw	0x01		;	нет, влево
-	movwf		TMP_ENC_B	;
-	movlw		0x00		; 0 в аккумулятор
-	btfsc		ENC_A		; сброшен импульс изменения значения?
-		movlw	0x01		;	нет, активен
-	movwf		TMP_ENC_A	;
-	xorwf		ENC_OLD_A,W	;
-	btfsc		ZERO		; есть изменение уровня А энкодера?
-		decf	TMP_ENC_A,W	; 
-	btfsc		ZERO		; 
-		goto	enc_state	;
-	decf		TMP_ENC_B,W	;
-	btfsc		ZERO		;
-		goto	enc_left	;
-	clrf		ENC_R_L		;
-	incf		ENC_R_L,F	;
-	goto		enc_act		;
-enc_left:
-	clrf		ENC_R_L		;
-enc_act:
-	clrf		ENC_ACTIV	;
-	incf		ENC_ACTIV,F	;
-enc_state:
-	movf		TMP_ENC_A,W	; сохранить текущее значение 
-	movwf		ENC_OLD_A	; на выводе А энкодера
-;*******************************************************************************
-; Проверка прерывания по TMR0 (irrc)
-int_tmr:
-	movlw		0x01		;b'0000 0001',' ',.01
-	btfss		T0IF
-		andlw	0x00		; нет прерывания по TMR0
-	bcf			T0IF		; сброс флага прерывания по TMR0
-	btfss		T0IE
-		andlw	0x00		; прерывание по TMR0 запрещено
-	iorlw		0x00		; для проверки на 0
-	btfsc		ZERO
-		goto	int_end		; не требуется интерпритация irrc
-;*******************************************************************************
-	call		irread
-;*******************************************************************************
-; Восстановление состояния при выходе из прарывания
-int_end:
-	movlw		0xFF		;
-	movwf		TMR0
-	swapf		TMP_PCLATH,W
-	movwf		PCLATH
-	swapf		TMP_FSR,W
-	movwf		FSR
-	swapf		TMP_STATUS,W
-	movwf		STATUS
-	swapf		TMP_W,F
-	swapf		TMP_W,W
-	retfie
+	return
 ;*******************************************************************************
 ; Запись собственных символов в CGRAM LCD
 ; номера каналов
@@ -501,7 +487,6 @@ BYTE_CGRAM	MACRO	BT
 	movlw		BT
 	call		print_lcd
 	ENDM
-	
 fill_CGRAM:
 	bcf			RS_L
 	BYTE_CGRAM	CGRADDR|0x00
@@ -723,11 +708,13 @@ on_off_dev:
 	incf		MODE_NUM,F
 	goto		on_off_led
 off_dev:
+	call		save_fregs		;
+	BANKSEL		ON_OFF			;
 	clrf		ON_OFF
 	incf		ON_OFF,F
 	clrf		MUTE_REG
 	incf		MUTE_REG,F
-	clrf		MODE_NUM
+	clrf		MODE_NUM	
 on_off_led:
 	bcf			GIE				; запретить все прерывания
 	movlw		234				; старший разряд счетчика паузы
@@ -988,10 +975,10 @@ init_ports:
 	BANKSEL		TMR0
 	movwf		TMR0
 	bsf			T0IE		; разрешить прерывания по TMR0
-	bcf			T0IF		; сбросить флаг прерывания по TMR0
+;	bcf			T0IF		; сбросить флаг прерывания по TMR0
 	bsf			RBIE		; разрешить прерывания по RB7:RB4
-	bcf			RBIF		; сбросить флаг прерывания по RB7:RB4
-	bsf			GIE			; разрешить все указанные прерывания
+;	bcf			RBIF		; сбросить флаг прерывания по RB7:RB4
+;	bsf			GIE			; разрешить все указанные прерывания
 	return
 ;*******************************************************************************
 get_from_EEPROM:
@@ -1054,5 +1041,4 @@ mute_on:
 	incf		MUTE_REG,F
 	return
 ;*******************************************************************************
-
 	end			ResetVector	; directive 'end of program'
