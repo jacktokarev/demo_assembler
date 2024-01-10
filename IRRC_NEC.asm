@@ -7,10 +7,10 @@ IRDATA_:		DS	1	;
 IRDATA:			DS	1	;
 IRADDR_:		DS	1	;
 IRADDR:			DS	1	;
-IRDATA_CP:		DS	1	;
-IRDATACP:		DS	1	;
-IRADDR_CP:		DS	1	;
-IRADDRCP:		DS	1	;
+;IRDATA_CP:		DS	1	;
+;IRDATACP:		DS	1	;
+;IRADDR_CP:		DS	1	;
+;IRADDRCP:		DS	1	;
 
 ;*******************************************************************************
 psect			udata_shr
@@ -53,14 +53,18 @@ startcond:
 	btfsc		CARRY			; 4350 мкс
 		goto	readaddr		; переход на чтение адреса
 ;*******************************************************************************
-	movf		IRADDR_CP,W		; при сбое приема восстанавливаем
-	movwf		IRADDR_			; предыдущие данные
-	movf		IRADDRCP,W
-	movwf		IRADDR
-	movf		IRDATACP,W
-	movwf		IRDATA
-	movf		IRDATA_CP,W
-	movwf		IRDATA_
+;	movf		IRADDR_CP,W		; при сбое приема восстанавливаем
+;	movwf		IRADDR_			; предыдущие данные
+;	movf		IRADDRCP,W
+;	movwf		IRADDR
+;	movf		IRDATACP,W
+;	movwf		IRDATA
+;	movf		IRDATA_CP,W
+;	movwf		IRDATA_
+	movlw		0x00			; при сбое заполняем непригодными
+	movwf		IRADDR			; к декодированию значениями адрес 
+	movlw		0x11			; и
+	movwf		IRDATA			; данные
 	return						; возврат при сбое на стартовой последоват.
 ;*******************************************************************************
 readaddr:
@@ -69,7 +73,8 @@ readbit:
 	movlw		0x20			;b'0010 0000',' ',.32
 	subwf		BITCOUNT,W
 	btfsc		CARRY
-		goto	copyirpkg		; переход при считывании 32 бит пакета
+;		goto	copyirpkg		; переход при считывании 32 бит пакета
+		return					; выход при считывании 32 бит пакета
 ;*******************************************************************************
 	movlw		0x00
 	movwf		TIMESCRAP
@@ -88,7 +93,7 @@ readbit:
 	btfsc		ZERO
 		return					; возврат если более 2230 мкс
 ;*******************************************************************************
-fixbit:
+;fixbit:
 	bcf			CARRY			; сбросить флаг переноса
 	rlf			IRDATA_,F		; сдвиг влево 
 	rlf			IRDATA,F		; ...
@@ -104,37 +109,46 @@ fixbit:
 	incf		BITCOUNT,F		; увеличить счетчик считанных бит
 	goto		readbit
 ;*******************************************************************************
-copyirpkg:
-	movf		IRADDR,W
-	movwf		IRADDRCP
-	movf		IRADDR_,W
-	movwf		IRADDR_CP
-	movf		IRDATA,W
-	movwf		IRDATACP
-	movf		IRDATA_,W
-	movwf		IRDATA_CP
-	return	
+;copyirpkg:
+;	movf		IRADDR,W
+;	movwf		IRADDRCP
+;	movf		IRADDR_,W
+;	movwf		IRADDR_CP
+;	movf		IRDATA,W
+;	movwf		IRDATACP
+;	movf		IRDATA_,W
+;	movwf		IRDATA_CP
+;	return	
 ;*******************************************************************************
-irstate:
+;irstate:
+;	btfsc		IRRC
+;		movlw	0x01		;b'0000 0001',' ',.01
+;	movwf		TMPIRBIT	; состаяние IR приемника в BIT0 W и TMPIRBIT
+;	clrf		TIMECOUNT
+;	clrf		TIMECOUNT+1
+;	return
+;*******************************************************************************
+;irchange:
+;	movlw		0x00		;b'0000 0000',' ',.00
+;	btfsc		IRRC
+;		movlw	0x01		;b'0000 0001',' ',.01
+;	xorwf		TMPIRBIT,W	; если состояние IR прм. изменилось -> 1 в BIT0 W
+;	return
+;*******************************************************************************
+waitstate:
+	movlw		0x00		;b'0000 0000',' ',.00
+;	call		irstate
 	btfsc		IRRC
 		movlw	0x01		;b'0000 0001',' ',.01
 	movwf		TMPIRBIT	; состаяние IR приемника в BIT0 W и TMPIRBIT
 	clrf		TIMECOUNT
 	clrf		TIMECOUNT+1
-	return
-;*******************************************************************************
-irchange:
+waitchange:
+;	call		irchange
 	movlw		0x00		;b'0000 0000',' ',.00
 	btfsc		IRRC
 		movlw	0x01		;b'0000 0001',' ',.01
 	xorwf		TMPIRBIT,W	; если состояние IR прм. изменилось -> 1 в BIT0 W
-	return
-;*******************************************************************************
-waitstate:
-	movlw		0x00		;b'0000 0000',' ',.00
-	call		irstate
-waitchange:
-	call		irchange
 	btfss		ZERO
 		retlw	0x00			; возврат при иззмнении состояния IR прм.
 	incf		TIMECOUNT+1,F		; считаем пока состояние IR прм. не меняется

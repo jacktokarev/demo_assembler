@@ -258,23 +258,21 @@ read_enc:
 	btfss		TMP_ENC,BIT7	; установлен флаг перехода через среднее полож.?
 		goto	decode_irrc		; нет, - выход
 	xorlw		0x01			; проверка на вращение
-	btfsc		ZERO			; по часовой
+	btfsc		ZERO			; по часовой?
 		bsf		TMP_ENC,BIT6	; да, установим флаг вращения по часовой
 	xorlw		0x02			; проверка на переход
 	btfss		ZERO			; в следущую позицию
 		goto	decode_irrc		; нет, - выход
-	btfsc		TMP_ENC,BIT6	;
-		goto	e_m				;	
-	call		encoder_plus
-	bcf			TMP_ENC,BIT7	;
-	bcf			TMP_ENC,BIT6	;
+	btfsc		TMP_ENC,BIT6	; вращение энкодера по часовой?
+		goto	e_m				; нет, - переход к уменьшению параметра
+	call		encoder_plus	; да, - переход к увеличению параметра
 	goto		e_n
 e_m:
 	call		encoder_minus
+e_n:
 	bcf			TMP_ENC,BIT7	;
-	bcf			TMP_ENC,BIT6	;
-e_n:	
-	movlw		0xFF		;b'1111 1111','я',.255
+	bcf			TMP_ENC,BIT6	;	
+	movlw		0xFF			;
 	movwf		REG022
 	movwf		REG023
 	call		to_line_2
@@ -285,8 +283,13 @@ decode_irrc:
 	xorlw		0x80		;адрес устройства
 	btfss		ZERO
 		goto	p_to_v_mode
+;		goto	auto_vol_mode
 	movf		IRDATA,W
-	xorlw		0x80		; код кнопки включения
+	xorlw		0x11		;
+	btfsc		ZERO
+		goto	p_to_v_mode
+	xorlw		0x80 ^ 0x11	; код кнопки включения
+;	xorlw		0x91		; код кнопки включения (0x80) искл. или 0x11
 	btfsc		ZERO
 		call	on_off_dev
 	movf		ON_OFF,F
@@ -404,8 +407,12 @@ auto_vol_mode:
 	movwf		REG022
 	movwf		REG023
 p_to_v_mode:
+	BANKSEL		IRADDR
 	clrf		IRADDR
-	clrf		IRDATA
+	movlw		0x11
+	movwf		IRDATA
+;	clrf		IRDATA
+	BANKSEL		REG021
 	movf		REG021,W
 	iorwf		REG020,W
 	btfsc		ZERO
@@ -971,8 +978,8 @@ init_ports:
 	bsf			T0CS		; тактовый сигнал внешний (от IR)
 	bsf			T0SE		; приращение по заднему фронту
 	bsf			PSA			; предделитель перед WDT
-	movlw		0xFF		;b'1111 1111','я',.255
 	BANKSEL		TMR0
+	movlw		0xFF		;b'1111 1111','я',.255
 	movwf		TMR0
 	bsf			T0IE		; разрешить прерывания по TMR0
 ;	bcf			T0IF		; сбросить флаг прерывания по TMR0
