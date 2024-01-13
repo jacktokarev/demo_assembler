@@ -19,28 +19,29 @@ CONFIG	CP = OFF			; Flash Program Memory Code Protection bit (Code protection of
 ; Used Registers
 psect	udata_bank0
 	
-REG020:		DS	1	;		equ	020h
-REG021:		DS	1	;		equ	021h
-REG022:		DS	1	;		equ	022h
-REG023:		DS	1	;		equ	023h
-BAL_TMP:	DS	1	;		equ	025h
-BASS_TMP:	DS	1	;		equ	026h
-CNL_TMP:	DS	1	;		equ	027h
-PAMP_TMP:	DS	1	;		equ	02Bh
-MODE_NUM:	DS	1	;		equ	02Dh
-TRBL_TMP:	DS	1	;		equ	02Eh
-VOL_TMP:	DS	1	;		equ	02Fh
-TMP_PKG1:	DS	1	;		equ	030h
-TMP_PKG:	DS	1	;		equ	031h
-COUNT3:		DS	1	;		equ	034h
-COUNT4:		DS	1	;		equ	035h
-LEVEL_REG:	DS	1	;		equ	036h
-REG037:		DS	1	;		equ	037h
-COUNT1:		DS	1	;		equ	038h
-COUNT2:		DS	1	;		equ	039h
-MUTE_REG:	DS	1	;		equ	03Ah
-ON_OFF:		DS	1	;		equ	03Bh
+REG020:		DS	1	;
+REG021:		DS	1	;
+REG022:		DS	1	;
+REG023:		DS	1	;
+BAL_TMP:	DS	1	;
+BASS_TMP:	DS	1	;
+CNL_TMP:	DS	1	;
+PAMP_TMP:	DS	1	;
+MODE_NUM:	DS	1	;
+TRBL_TMP:	DS	1	;
+VOL_TMP:	DS	1	;
+TMP_PKG1:	DS	1	;
+TMP_PKG:	DS	1	;
+COUNT3:		DS	1	;
+COUNT4:		DS	1	;
+LEVEL_REG:	DS	1	;
+REG037:		DS	1	;
+COUNT1:		DS	1	;
+COUNT2:		DS	1	;
+MUTE_REG:	DS	1	;
+ON_OFF:		DS	1	;
 MDL_TMP:	DS	1	;
+OLD_IRDATA:	DS	1	;
 	
 ;*******************************************************************************
 psect		udata_shr
@@ -222,10 +223,10 @@ other_key:
 	xorlw		0x01		; 1 - "MUTE" key
 	btfsc		ZERO
 		goto	mute_key
-	xorlw		0x03		; 2 - "NEXT" key
+	xorlw		0x02 ^ 0x01		; 2 - "NEXT" key
 	btfsc		ZERO
 		goto	next_key
-	xorlw		0x01		; 3 - "PREV" key
+	xorlw		0x03 ^ 0x02		; 3 - "PREV" key
 	btfsc		ZERO
 		goto	prev_key
 ;*******************************************************************************
@@ -279,6 +280,7 @@ e_n:
 ;*******************************************************************************
 decode_irrc:
 ;	call		irdecode
+	BANKSEL		IRADDR
 	movf		IRADDR,W
 	xorlw		0x80		;адрес устройства
 	btfss		ZERO
@@ -287,15 +289,23 @@ decode_irrc:
 	movf		IRDATA,W
 	xorlw		0x11		;
 	btfsc		ZERO
-		goto	p_to_v_mode
-	xorlw		0x80 ^ 0x11	; код кнопки включения
+		goto	p_to_v_mode	;
+	xorlw		0xEE ^ 0x11	; повтор команды при зажатой кнопке ДУ
+	btfsc		ZERO
+		goto	repeat_command
+	xorlw		0x80 ^ 0xEE	; код кнопки включения
 ;	xorlw		0x91		; код кнопки включения (0x80) искл. или 0x11
 	btfsc		ZERO
 		call	on_off_dev
+	BANKSEL		ON_OFF
 	movf		ON_OFF,F
 	btfsc		ZERO
 		goto	decode_command
 	goto		auto_vol_mode
+repeat_command:
+	movf		OLD_IRDATA,W
+	movwf		IRDATA
+	goto		decode_command
 ;*******************************************************************************
 ch_one:
 	movf		REG021,W
@@ -356,44 +366,55 @@ rc_param_plus:
 	goto		auto_vol_mode
 ;*******************************************************************************
 decode_command:
+	BANKSEL		IRDATA
 	movf		IRDATA,W
+	movwf		OLD_IRDATA
 	xorlw		0x42		; код кнопки "влево" ("V-")
 	btfsc		ZERO
 		goto	rc_param_minus
-	movf		IRDATA,W
-	xorlw		0x82		; код кнопки "вправо" ("V+")
+;	movf		IRDATA,W
+;	xorlw		0x82		; код кнопки "вправо" ("V+")
+	xorlw		0x82 ^ 0x42
 	btfsc		ZERO
 		goto	rc_param_plus
-	movf		REG021,W
-	iorwf		REG020,W
-	btfss		ZERO
-		goto	auto_vol_mode		
-	movf		IRDATA,W
-	xorlw		0x00		; код кнопки "1"
+	BANKSEL		REG021
+;	movf		REG021,W
+;	iorwf		REG020,W
+;	btfss		ZERO
+;		goto	auto_vol_mode	
+;	movf		IRDATA,W
+;	xorlw		0x00		; код кнопки "1"
+	xorlw		0x00 ^ 0x82
 	btfsc		ZERO
 		goto	ch_one
-	movf		IRDATA,W
-	xorlw		0xE0		; код кнопки "2"
+;	movf		IRDATA,W
+;	xorlw		0xE0		; код кнопки "2"
+	xorlw		0xE0 ^ 0x00
 	btfsc		ZERO
 		goto	ch_two
-	movf		IRDATA,W
-	xorlw		0x60		; код кнопки "3"
+;	movf		IRDATA,W
+;	xorlw		0x60		; код кнопки "3"
+	xorlw		0x60 ^ 0xE0
 	btfsc		ZERO
 		goto	ch_three
-	movf		IRDATA,W
-	xorlw		0x20		; код кнопки "4"
+;	movf		IRDATA,W
+;	xorlw		0x20		; код кнопки "4"
+	xorlw		0x20 ^ 0x60
 	btfsc		ZERO
 		goto	ch_four
-	movf		IRDATA,W
-	xorlw		0x48		; код кнопки "mute"
+;	movf		IRDATA,W
+;	xorlw		0x48		; код кнопки "mute"
+	xorlw		0x48 ^ 0x20
 	btfsc		ZERO
 		goto	rc_mute
-	movf		IRDATA,W
-	xorlw		0xE8		; код кнопки "вверх" ("CH+")
+;	movf		IRDATA,W
+;	xorlw		0xE8		; код кнопки "вверх" ("CH+")
+	xorlw		0xE8 ^ 0x48
 	btfsc		ZERO
 		goto	rc_mode_next
-	movf		IRDATA,W
-	xorlw		0x58		; код кнопки "вниз" ("CH-")
+;	movf		IRDATA,W
+;	xorlw		0x58		; код кнопки "вниз" ("CH-")
+	xorlw		0x58 ^ 0xE8
 	btfsc		ZERO
 		goto	rc_mode_prev
 ;*******************************************************************************
@@ -407,11 +428,10 @@ auto_vol_mode:
 	movwf		REG022
 	movwf		REG023
 p_to_v_mode:
-	BANKSEL		IRADDR
-	clrf		IRADDR
+	BANKSEL		IRDATA
+;	clrf		IRADDR
 	movlw		0x11
 	movwf		IRDATA
-;	clrf		IRDATA
 	BANKSEL		REG021
 	movf		REG021,W
 	iorwf		REG020,W
@@ -444,6 +464,9 @@ in_vol_mode:
 		goto	read_keys
 	clrf		MODE_NUM
 	incf		MODE_NUM,F
+	BANKSEL		OLD_IRDATA
+	movlw		0x11
+	movwf		OLD_IRDATA
 	call		mode_print
 ;*******************************************************************************
 	goto		read_keys	;
@@ -707,6 +730,7 @@ chanel_wheel_left:
 	return
 ;*******************************************************************************
 on_off_dev:
+	BANKSEL		ON_OFF			;
 	decfsz		ON_OFF,W
 		goto	off_dev
 	clrf		ON_OFF

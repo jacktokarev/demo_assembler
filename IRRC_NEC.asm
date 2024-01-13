@@ -30,29 +30,34 @@ irread:
 	movlw		0x27
 	movwf		TIMESCRAP+1
 	swapf		TIMESCRAP+1,F
-	call		waitstate		; высокий уровень стартовой последовательности
-	xorlw		0x01
+	call		waitstate		; высокий уровень стартовrой последовательности
+	xorlw		0x01			; ждем примерно 9930 микросекунд.
 	btfsc		ZERO
-		return					; возврат если более 11030 мкс
+		return					; возврат если более 9930 мкс
 	movlw		0x01
 	movwf		TIMESCRAP
 	movlw		0x0F
 	movwf		TIMESCRAP+1
 	swapf		TIMESCRAP+1,F
 	call		waitstate		; низкий уровень стартовой последовательности
-	xorlw		0x01
+	xorlw		0x01			; ждем примерно 4890 микросекунд
 	btfsc		ZERO
-		return					; возврат если более 7350 мкс
+		return					; возврат если более 4890 мкс
 ;*******************************************************************************
 startcond:
-	movlw		0x00			;b'0000 0000',' ',.00
+	movlw		0x00			;
 	subwf		TIMECOUNT,W
-	movlw		0x87			;b'1000 0111','‡',.135
+	movlw		0x90			;
 	btfsc		ZERO			; проверка стартовой последовательности:
 		subwf	TIMECOUNT+1,W	; переход из "1" в "0" и обратно более чем 
-	btfsc		CARRY			; 4350 мкс
+	btfsc		CARRY			; 2600 мкс
 		goto	readaddr		; переход на чтение адреса
 ;*******************************************************************************
+	movlw		0x75			; проверка последовательности повтора
+;	btfsc		ZERO
+		subwf	TIMECOUNT+1,W	; комманды при зажатой кнопке пульта
+	btfsc		CARRY			;
+		goto	repeatcond		;
 ;	movf		IRADDR_CP,W		; при сбое приема восстанавливаем
 ;	movwf		IRADDR_			; предыдущие данные
 ;	movf		IRADDRCP,W
@@ -61,11 +66,19 @@ startcond:
 ;	movwf		IRDATA
 ;	movf		IRDATA_CP,W
 ;	movwf		IRDATA_
-	movlw		0x00			; при сбое заполняем непригодными
-	movwf		IRADDR			; к декодированию значениями адрес 
+bugcommand:
+;	movlw		0x00			; при сбое возвращаем непригодные
+;	movwf		IRADDR			; к декодированию значения адреса
+	clrf		IRADDR
 	movlw		0x11			; и
-	movwf		IRDATA			; данные
+	movwf		IRDATA			; данных (в данной конфигурации)
 	return						; возврат при сбое на стартовой последоват.
+repeatcond:
+;	movlw		0x80			; адрес 0x80 при приеме последовательности
+;	movwf		IRADDR			; повтора команды при зажатой кнопке
+	movlw		0xEE			; пульта и данные (команда) 0xEE
+	movwf		IRDATA			; (в данной конфигурации)
+	return						; возврат при повторе команды
 ;*******************************************************************************
 readaddr:
 	clrf		BITCOUNT
@@ -78,20 +91,24 @@ readbit:
 ;*******************************************************************************
 	movlw		0x00
 	movwf		TIMESCRAP
-	movlw		0x29
+;	movlw		0x29
+	movlw		0x23			; 640 мкс
 	movwf		TIMESCRAP+1
 	swapf		TIMESCRAP+1,F
 	call		waitstate
 	xorlw		0x01
 	btfsc		ZERO
-		return					; возврат если более 830 мкс
-	movlw		0x6F
+;		return					; возврат если более 745 мкс
+		goto	bugcommand		; возврат если более 745 мкс
+;	movlw		0x6F
+	movlw		0x67			; 1865 мкс
 	movwf		TIMESCRAP+1
 	swapf		TIMESCRAP+1,F
 	call		waitstate
 	xorlw		0x01
 	btfsc		ZERO
-		return					; возврат если более 2230 мкс
+;		return					; возврат если более 2005 мкс
+		goto	bugcommand		; возврат если более 2005 мкс
 ;*******************************************************************************
 ;fixbit:
 	bcf			CARRY			; сбросить флаг переноса
@@ -101,10 +118,11 @@ readbit:
 	rlf			IRADDR,F		; ...
 	movlw		0x00			;b'0000 0000',' ',.00
 	subwf		TIMECOUNT,W
-	movlw		0x24			;b'0010 0100','$',.36
+;	movlw		0x24			;b'0010 0100','$',.36
+	movlw		0x30			; 875 мкс
 	btfsc		ZERO
 		subwf	TIMECOUNT+1,W
-	btfsc		CARRY			; >1150 мкс (значение считанного бита равно 0)
+	btfsc		CARRY			; >650 мкс (значение считанного бита равно 0)
 		bsf		IRDATA_,BIT0	; значеение считанного бита равно 1
 	incf		BITCOUNT,F		; увеличить счетчик считанных бит
 	goto		readbit
@@ -151,7 +169,7 @@ waitchange:
 	xorwf		TMPIRBIT,W	; если состояние IR прм. изменилось -> 1 в BIT0 W
 	btfss		ZERO
 		retlw	0x00			; возврат при иззмнении состояния IR прм.
-	incf		TIMECOUNT+1,F		; считаем пока состояние IR прм. не меняется
+	incf		TIMECOUNT+1,F	; считаем пока состояние IR прм. не меняется
 	btfsc		ZERO
 		incf	TIMECOUNT,F
 	movf		TIMESCRAP,W
@@ -160,7 +178,7 @@ waitchange:
 	btfsc		ZERO
 		subwf	TIMECOUNT+1,W
 	btfsc		CARRY
-		retlw	0x01				; возврат если превышено время ожидания
+		retlw	0x01			; возврат если превышено время ожидания
 	goto		waitchange
 ;*******************************************************************************
 irdecode:
