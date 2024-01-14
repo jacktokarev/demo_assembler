@@ -187,7 +187,7 @@ read_keys:
 	btfsc		ZERO
 		goto	read_enc
 	movf		PRESSED_KEY,W
-	xorlw		0x04		;b'0000 0100',' ',.04
+	xorlw		0x04		;
 	btfss		ZERO
 		goto	on_off_key
 	call		on_off_dev
@@ -220,7 +220,7 @@ prev_key:
 ;*******************************************************************************
 other_key:
 	movf		PRESSED_KEY,W
-	xorlw		0x01		; 1 - "MUTE" key
+	xorlw		0x01			; 1 - "MUTE" key
 	btfsc		ZERO
 		goto	mute_key
 	xorlw		0x02 ^ 0x01		; 2 - "NEXT" key
@@ -232,16 +232,16 @@ other_key:
 ;*******************************************************************************
 in_mode:
 	call		mode_print
-	movlw		0xFF		;b'1111 1111','я',.255
+	movlw		0xFF		;
 	movwf		REG022
 	movwf		REG023
 	movwf		COUNT1
-	movlw		0x8F		;b'1000 1111','Џ',.143
+	movlw		0x8F		;
 	movwf		COUNT2
 pause_mode:
-	movlw		0x01		;b'0000 0001',' ',.01
+	movlw		0x01		;
 	subwf		COUNT1,F
-	movlw		0x00		;b'0000 0000',' ',.00
+	movlw		0x00		;
 	btfss		CARRY
 		decf	COUNT2,F
 	subwf		COUNT2,F
@@ -279,13 +279,11 @@ e_n:
 	call		to_line_2
 ;*******************************************************************************
 decode_irrc:
-;	call		irdecode
 	BANKSEL		IRADDR
 	movf		IRADDR,W
 	xorlw		0x80		;адрес устройства
 	btfss		ZERO
 		goto	p_to_v_mode
-;		goto	auto_vol_mode
 	movf		IRDATA,W
 	xorlw		0x11		;
 	btfsc		ZERO
@@ -294,7 +292,6 @@ decode_irrc:
 	btfsc		ZERO
 		goto	repeat_command
 	xorlw		0x80 ^ 0xEE	; код кнопки включения
-;	xorlw		0x91		; код кнопки включения (0x80) искл. или 0x11
 	btfsc		ZERO
 		call	on_off_dev
 	BANKSEL		ON_OFF
@@ -372,49 +369,29 @@ decode_command:
 	xorlw		0x42		; код кнопки "влево" ("V-")
 	btfsc		ZERO
 		goto	rc_param_minus
-;	movf		IRDATA,W
-;	xorlw		0x82		; код кнопки "вправо" ("V+")
-	xorlw		0x82 ^ 0x42
+	xorlw		0x82 ^ 0x42	; код кнопки "вправо" ("V+")
 	btfsc		ZERO
 		goto	rc_param_plus
-	BANKSEL		REG021
-;	movf		REG021,W
-;	iorwf		REG020,W
-;	btfss		ZERO
-;		goto	auto_vol_mode	
-;	movf		IRDATA,W
-;	xorlw		0x00		; код кнопки "1"
-	xorlw		0x00 ^ 0x82
+	BANKSEL		REG021	
+	xorlw		0x00 ^ 0x82	; код кнопки "1"
 	btfsc		ZERO
-		goto	ch_one
-;	movf		IRDATA,W
-;	xorlw		0xE0		; код кнопки "2"
-	xorlw		0xE0 ^ 0x00
+		goto	ch_one	
+	xorlw		0xE0 ^ 0x00	; код кнопки "2"
 	btfsc		ZERO
-		goto	ch_two
-;	movf		IRDATA,W
-;	xorlw		0x60		; код кнопки "3"
-	xorlw		0x60 ^ 0xE0
+		goto	ch_two	
+	xorlw		0x60 ^ 0xE0	; код кнопки "3"
 	btfsc		ZERO
-		goto	ch_three
-;	movf		IRDATA,W
-;	xorlw		0x20		; код кнопки "4"
-	xorlw		0x20 ^ 0x60
+		goto	ch_three	
+	xorlw		0x20 ^ 0x60	; код кнопки "4"
 	btfsc		ZERO
 		goto	ch_four
-;	movf		IRDATA,W
-;	xorlw		0x48		; код кнопки "mute"
-	xorlw		0x48 ^ 0x20
+	xorlw		0x48 ^ 0x20	; код кнопки "mute"
 	btfsc		ZERO
 		goto	rc_mute
-;	movf		IRDATA,W
-;	xorlw		0xE8		; код кнопки "вверх" ("CH+")
-	xorlw		0xE8 ^ 0x48
+	xorlw		0xE8 ^ 0x48	; код кнопки "вверх" ("CH+")
 	btfsc		ZERO
 		goto	rc_mode_next
-;	movf		IRDATA,W
-;	xorlw		0x58		; код кнопки "вниз" ("CH-")
-	xorlw		0x58 ^ 0xE8
+	xorlw		0x58 ^ 0xE8	; код кнопки "вниз" ("CH-")
 	btfsc		ZERO
 		goto	rc_mode_prev
 ;*******************************************************************************
@@ -429,7 +406,7 @@ auto_vol_mode:
 	movwf		REG023
 p_to_v_mode:
 	BANKSEL		IRDATA
-;	clrf		IRADDR
+
 	movlw		0x11
 	movwf		IRDATA
 	BANKSEL		REG021

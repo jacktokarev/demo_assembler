@@ -3,182 +3,117 @@
 ;*******************************************************************************
 psect			udata_bank0
 	
-IRDATA_:		DS	1	;
-IRDATA:			DS	1	;
-IRADDR_:		DS	1	;
-IRADDR:			DS	1	;
-;IRDATA_CP:		DS	1	;
-;IRDATACP:		DS	1	;
-;IRADDR_CP:		DS	1	;
-;IRADDRCP:		DS	1	;
-
+IRDATA:			DS	2	;
+IRADDR:			DS	2	;
 ;*******************************************************************************
 psect			udata_shr
 
-TIMECOUNT:		DS	2	;
+TIMECOUNT:		DS	1	;
 BITCOUNT:		DS	1	;
 TMPIRBIT:		DS	1	;
-TIMESCRAP:		DS	2	;
+TIMESCRAP:		DS	1	;
 
 ;*******************************************************************************
 psect			code
 
 irread:
 	BANKSEL		IRRC_PORT
-	movlw		0x02
+	movlw		0xFA
 	movwf		TIMESCRAP
-	movlw		0x27
-	movwf		TIMESCRAP+1
-	swapf		TIMESCRAP+1,F
 	call		waitstate		; высокий уровень стартовrой последовательности
-	xorlw		0x01			; ждем примерно 9930 микросекунд.
-	btfsc		ZERO
-		return					; возврат если более 9930 мкс
-	movlw		0x01
-	movwf		TIMESCRAP
-	movlw		0x0F
-	movwf		TIMESCRAP+1
-	swapf		TIMESCRAP+1,F
+	xorlw		0x01			; ждем примерно 5010 микросекунд.
+	btfss		ZERO
+		goto	waitlow			;
+	call		waitstate		; высокий уровень стартовrой последовательности
+	xorlw		0x01			; ждем примерно 5010 микросекунд.
+	btfsc		ZERO			;
+		return					; возврат если более 10020 мкс
+waitlow:
 	call		waitstate		; низкий уровень стартовой последовательности
-	xorlw		0x01			; ждем примерно 4890 микросекунд
+	xorlw		0x01			; ждем примерно 5010 микросекунд
 	btfsc		ZERO
-		return					; возврат если более 4890 мкс
+		return					; возврат если более 5010 мкс
 ;*******************************************************************************
 startcond:
-	movlw		0x00			;
-	subwf		TIMECOUNT,W
-	movlw		0x90			;
-	btfsc		ZERO			; проверка стартовой последовательности:
-		subwf	TIMECOUNT+1,W	; переход из "1" в "0" и обратно более чем 
-	btfsc		CARRY			; 2600 мкс
+	movlw		0x82			; проверка стартовой последовательности:
+	subwf		TIMECOUNT,W		; переход из "0" в "1" более чем 
+	btfsc		CARRY			; 2609 мкс
 		goto	readaddr		; переход на чтение адреса
 ;*******************************************************************************
-	movlw		0x75			; проверка последовательности повтора
-;	btfsc		ZERO
-		subwf	TIMECOUNT+1,W	; комманды при зажатой кнопке пульта
-	btfsc		CARRY			;
-		goto	repeatcond		;
-;	movf		IRADDR_CP,W		; при сбое приема восстанавливаем
-;	movwf		IRADDR_			; предыдущие данные
-;	movf		IRADDRCP,W
-;	movwf		IRADDR
-;	movf		IRDATACP,W
-;	movwf		IRDATA
-;	movf		IRDATA_CP,W
-;	movwf		IRDATA_
+	movlw		0x69			; проверка последовательности повтора
+	subwf		TIMECOUNT,W		; комманды при зажатой кнопке пульта
+	btfsc		CARRY			; переход из "0" в "1" более чем
+		goto	repeatcond		; 2109 мкс
 bugcommand:
-;	movlw		0x00			; при сбое возвращаем непригодные
-;	movwf		IRADDR			; к декодированию значения адреса
-	clrf		IRADDR
-	movlw		0x11			; и
-	movwf		IRDATA			; данных (в данной конфигурации)
-	return						; возврат при сбое на стартовой последоват.
+	clrf		IRADDR			; при сбое возвращаем непригодные
+	movlw		0x11			; к декодированию значения адреса
+	movwf		IRDATA			; и данных (в данной конфигурации)
+	return						; возврат при сбое
 repeatcond:
-;	movlw		0x80			; адрес 0x80 при приеме последовательности
-;	movwf		IRADDR			; повтора команды при зажатой кнопке
-	movlw		0xEE			; пульта и данные (команда) 0xEE
-	movwf		IRDATA			; (в данной конфигурации)
+	movlw		0xEE			; данные (команда) 0xEE (в данной конфигурации)
+	movwf		IRDATA			; при приеме сигнала повтора при зажатой кнопке
 	return						; возврат при повторе команды
 ;*******************************************************************************
 readaddr:
 	clrf		BITCOUNT
 readbit:
-	movlw		0x20			;b'0010 0000',' ',.32
+	movlw		0x20			;
 	subwf		BITCOUNT,W
 	btfsc		CARRY
-;		goto	copyirpkg		; переход при считывании 32 бит пакета
 		return					; выход при считывании 32 бит пакета
 ;*******************************************************************************
-	movlw		0x00
+	movlw		0x20			; 650 мкс
 	movwf		TIMESCRAP
-;	movlw		0x29
-	movlw		0x23			; 640 мкс
-	movwf		TIMESCRAP+1
-	swapf		TIMESCRAP+1,F
 	call		waitstate
 	xorlw		0x01
 	btfsc		ZERO
-;		return					; возврат если более 745 мкс
-		goto	bugcommand		; возврат если более 745 мкс
-;	movlw		0x6F
-	movlw		0x67			; 1865 мкс
-	movwf		TIMESCRAP+1
-	swapf		TIMESCRAP+1,F
+		goto	bugcommand		; возврат если более 650 мкс
+	movlw		0x62			; 1875 мкс
+	movwf		TIMESCRAP
 	call		waitstate
 	xorlw		0x01
 	btfsc		ZERO
-;		return					; возврат если более 2005 мкс
-		goto	bugcommand		; возврат если более 2005 мкс
+		goto	bugcommand		; возврат если более 1875 мкс
 ;*******************************************************************************
 ;fixbit:
 	bcf			CARRY			; сбросить флаг переноса
-	rlf			IRDATA_,F		; сдвиг влево 
+	rlf			IRDATA+1,F		; сдвиг влево 
 	rlf			IRDATA,F		; ...
-	rlf			IRADDR_,F		; ...
+	rlf			IRADDR+1,F		; ...
 	rlf			IRADDR,F		; ...
-	movlw		0x00			;b'0000 0000',' ',.00
+	movlw		0x2E			; 885 мкс
 	subwf		TIMECOUNT,W
-;	movlw		0x24			;b'0010 0100','$',.36
-	movlw		0x30			; 875 мкс
-	btfsc		ZERO
-		subwf	TIMECOUNT+1,W
-	btfsc		CARRY			; >650 мкс (значение считанного бита равно 0)
-		bsf		IRDATA_,BIT0	; значеение считанного бита равно 1
+	btfsc		CARRY			; >885 мкс (значение считанного бита равно 0)
+		bsf		IRDATA+1,BIT0	; значеение считанного бита равно 1
 	incf		BITCOUNT,F		; увеличить счетчик считанных бит
 	goto		readbit
 ;*******************************************************************************
-;copyirpkg:
-;	movf		IRADDR,W
-;	movwf		IRADDRCP
-;	movf		IRADDR_,W
-;	movwf		IRADDR_CP
-;	movf		IRDATA,W
-;	movwf		IRDATACP
-;	movf		IRDATA_,W
-;	movwf		IRDATA_CP
-;	return	
-;*******************************************************************************
-;irstate:
-;	btfsc		IRRC
-;		movlw	0x01		;b'0000 0001',' ',.01
-;	movwf		TMPIRBIT	; состаяние IR приемника в BIT0 W и TMPIRBIT
-;	clrf		TIMECOUNT
-;	clrf		TIMECOUNT+1
-;	return
-;*******************************************************************************
-;irchange:
-;	movlw		0x00		;b'0000 0000',' ',.00
-;	btfsc		IRRC
-;		movlw	0x01		;b'0000 0001',' ',.01
-;	xorwf		TMPIRBIT,W	; если состояние IR прм. изменилось -> 1 в BIT0 W
-;	return
-;*******************************************************************************
 waitstate:
 	movlw		0x00		;b'0000 0000',' ',.00
-;	call		irstate
 	btfsc		IRRC
 		movlw	0x01		;b'0000 0001',' ',.01
 	movwf		TMPIRBIT	; состаяние IR приемника в BIT0 W и TMPIRBIT
+	nop
 	clrf		TIMECOUNT
-	clrf		TIMECOUNT+1
 waitchange:
-;	call		irchange
+	nop
 	movlw		0x00		;b'0000 0000',' ',.00
+	nop
 	btfsc		IRRC
 		movlw	0x01		;b'0000 0001',' ',.01
+	nop
 	xorwf		TMPIRBIT,W	; если состояние IR прм. изменилось -> 1 в BIT0 W
 	btfss		ZERO
-		retlw	0x00			; возврат при иззмнении состояния IR прм.
-	incf		TIMECOUNT+1,F	; считаем пока состояние IR прм. не меняется
-	btfsc		ZERO
-		incf	TIMECOUNT,F
+		retlw	0x00		; возврат при иззмнении состояния IR прм.
+	nop
+	incf		TIMECOUNT,F	; считаем пока состояние IR прм. не меняется
+	nop
 	movf		TIMESCRAP,W
+	nop
 	subwf		TIMECOUNT,W
-	swapf		TIMESCRAP+1,W
-	btfsc		ZERO
-		subwf	TIMECOUNT+1,W
 	btfsc		CARRY
 		retlw	0x01			; возврат если превышено время ожидания
+	nop
 	goto		waitchange
 ;*******************************************************************************
 irdecode:
